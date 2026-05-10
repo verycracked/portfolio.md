@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Single page, single user. id is hard-coded to "main".
+model Page {
+  id          String   @id
+  contentJson Json?
+  contentMd   String   @default("")
+  updatedAt   DateTime @updatedAt
+}
+
+model Asset {
+  id        String   @id @default(cuid())
+  url       String
+  key       String   @unique
+  mime      String
+  size      Int
+  createdAt DateTime @default(now())
+}

@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# portfolio.md
 
-## Getting Started
+A Notion-style block editor for your portfolio. Single-user, password-locked, Markdown in/out.
 
-First, run the development server:
+Edit at `/edit`, publish, and your work is live at `/[your-username]`.
+
+## What's working
+
+- **Editor** — BlockNote (Notion-style blocks): paragraphs, headings, lists, code, tables, quotes, dividers. Slash menu, drag handles, formatting toolbar.
+- **Markdown import** — drop a `.md` file → blocks
+- **Markdown export** — one click → `.md` download
+- **Image upload** — drag/drop or paste in the editor → uploaded to Cloudflare R2, inserted as image block
+- **URL capture** — paste a URL → headless Chrome screenshot → uploaded to R2 → inserted as image
+- **Multi-page** — each user has multiple pages (`home`, `projects`, etc.). `/[user]` is home; `/[user]/[slug]` is anything else.
+- **Public page nav** — published pages auto-link in a small chip nav
+- **Per-page appearance** — theme (light/dark/system), font, align, font size, all editable in the editor
+- **Publish/draft toggle** — only published pages are visible to the public; you (the owner) always see drafts
+- **Password lock** — single `OWNER_PASSWORD` env var, HMAC-signed cookie session, 30-day TTL
+
+## Stack
+
+- Next.js 16 (App Router, Turbopack) on Vercel
+- BlockNote + react-markdown + remark-gfm
+- Prisma + Postgres (Neon)
+- Cloudflare R2 for images & captures
+- Playwright + @sparticuz/chromium for URL screenshots
+- Tailwind v4 + Geist + `@tailwindcss/typography`
+
+## Local setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+cp .env.example .env.local
+# fill in DATABASE_URL, OWNER_*, R2_*, SESSION_SECRET
+
+pnpm install
+pnpm exec prisma db push
 pnpm dev
-# or
-bun dev
+# → http://localhost:3001 (or 3000 if free)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `/lock`, enter `OWNER_PASSWORD`, you're in.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Env vars
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| key                    | what                                                                 |
+| ---------------------- | -------------------------------------------------------------------- |
+| `DATABASE_URL`         | Postgres connection string (Neon)                                    |
+| `OWNER_USERNAME`       | the username your portfolio lives at: `/[username]`                  |
+| `OWNER_NAME`           | your display name (shown on portfolio)                               |
+| `OWNER_AVATAR_URL`     | avatar URL (e.g. github avatar)                                      |
+| `OWNER_PASSWORD`       | the password to unlock `/edit`                                       |
+| `SESSION_SECRET`       | `openssl rand -base64 32`                                            |
+| `R2_ACCOUNT_ID`        | Cloudflare account ID                                                |
+| `R2_ACCESS_KEY_ID`     | R2 token key                                                         |
+| `R2_SECRET_ACCESS_KEY` | R2 token secret                                                      |
+| `R2_BUCKET`            | bucket name                                                          |
+| `R2_PUBLIC_URL`        | public URL of the bucket                                             |
+| `LOCAL_CHROMIUM_PATH`  | optional: full path to Chrome for capture in dev (auto-detected)     |
 
-## Learn More
+## Routes
 
-To learn more about Next.js, take a look at the following resources:
+| route                     | what                                                  |
+| ------------------------- | ----------------------------------------------------- |
+| `/`                       | landing — links to your portfolio + edit              |
+| `/lock?next=…`            | password gate                                         |
+| `/edit`                   | editor for `home` page                                |
+| `/edit?slug=…`            | editor for any other page                             |
+| `/edit/new`               | create new page                                       |
+| `/[username]`             | public home page                                      |
+| `/[username]/[slug]`      | public sub-page                                       |
+| `/api/login` POST         | password → session cookie                             |
+| `/api/logout` POST        | clears cookie                                         |
+| `/api/page` PUT           | upsert page (slug + content + appearance + published) |
+| `/api/page?slug=…` DELETE | delete a non-home page                                |
+| `/api/upload` POST        | multipart upload → R2                                 |
+| `/api/capture` POST       | `{url}` → headless screenshot → R2                    |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Data model
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `User` — single user (the owner, identified by `OWNER_USERNAME`)
+- `Page` — `(userId, slug)` unique. Holds BlockNote JSON, derived markdown, appearance fields, published flag.
+- `Asset` — every uploaded file, one row per upload
 
-## Deploy on Vercel
+## Deploy to Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm dlx vercel link
+pnpm dlx vercel env pull .env.production.local  # or push from .env.local
+pnpm dlx vercel --prod
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+After deploy:
+1. Update `OWNER_PASSWORD` to a real password
+2. Make sure all R2 + DB env vars are set in Vercel project settings
+3. R2 token + bucket should be production-grade, not the dev one
+4. Visit `https://your-app.vercel.app/lock`
+
+## Future moves
+
+- Custom domains (`vc.dev` → portfolio)
+- Drag-to-reorder pages
+- OG image generation per page
+- Soft-delete + revision history
+- Theme presets matching nomo's `adn` flavor
+- Mobile-optimized BlockNote menus
