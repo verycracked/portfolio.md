@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { isAuthed } from "@/lib/auth";
+import { isOwnerOrBearer } from "@/lib/extension-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!(await isAuthed())) {
+  if (!(await isOwnerOrBearer(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const { id } = await params;
@@ -30,7 +30,7 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!(await isAuthed())) {
+  if (!(await isOwnerOrBearer(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const { id: projectId } = await params;

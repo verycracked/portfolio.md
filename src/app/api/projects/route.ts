@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { isAuthed } from "@/lib/auth";
+import { isOwnerOrBearer } from "@/lib/extension-auth";
 import { prisma } from "@/lib/prisma";
 
 function slugify(input: string) {
@@ -13,26 +13,32 @@ function slugify(input: string) {
   return base || nanoid(8);
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  // Listing is owner-or-bearer-only; we don't want public enumeration.
+  if (!(await isOwnerOrBearer(req))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const projects = await prisma.project.findMany({
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    select: { id: true, slug: true, title: true, description: true },
   });
   return NextResponse.json(projects);
 }
 
 export async function POST(req: Request) {
-  if (!(await isAuthed())) {
+  if (!(await isOwnerOrBearer(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const body = (await req.json().catch(() => ({}))) as {
     title?: string;
+    description?: string;
     sourceUrl?: string;
+    heroImageUrl?: string;
   };
 
   const title = body.title?.trim() || "Untitled";
   let slug = slugify(title);
 
-  // ensure unique
   const existing = await prisma.project.findUnique({ where: { slug } });
   if (existing) slug = `${slug}-${nanoid(4)}`;
 
@@ -43,7 +49,14 @@ export async function POST(req: Request) {
   const order = (last?.order ?? -1) + 1;
 
   const project = await prisma.project.create({
-    data: { slug, title, sourceUrl: body.sourceUrl, order },
+    data: {
+      slug,
+      title,
+      description: body.description ?? "",
+      sourceUrl: body.sourceUrl,
+      heroImageUrl: body.heroImageUrl,
+      order,
+    },
   });
   return NextResponse.json(project);
 }
