@@ -1,35 +1,42 @@
-import Link from "next/link";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { isAuthed } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Gallery } from "@/components/gallery";
 
-export default async function Home() {
-  const page = await prisma.page.findUnique({ where: { id: "main" } });
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ preview?: string }>;
+}) {
+  const [{ preview }, rows, settings] = await Promise.all([
+    searchParams,
+    prisma.project.findMany({
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        heroImageUrl: true,
+        passwordHash: true,
+      },
+    }),
+    prisma.settings.findUnique({ where: { id: "main" } }),
+  ]);
   const owner = await isAuthed();
-  const md = page?.contentMd?.trim() || "";
+  const previewing = preview === "1";
+
+  // Don't leak hashes to the client; expose only a boolean.
+  const projects = rows.map(({ passwordHash, ...rest }) => ({
+    ...rest,
+    isProtected: !!passwordHash,
+  }));
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      {md ? (
-        <article className="prose prose-stone max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{md}</ReactMarkdown>
-        </article>
-      ) : (
-        <div className="text-stone-500">
-          <p>nothing here yet.</p>
-          <p className="mt-2 text-xs">
-            <Link href="/edit" className="underline-offset-2 hover:underline">
-              start writing →
-            </Link>
-          </p>
-        </div>
-      )}
-      <footer className="mt-16 border-t border-stone-200 pt-4 text-xs text-stone-400">
-        <Link href="/edit" className="underline-offset-2 hover:underline">
-          {owner ? "edit" : "lock"}
-        </Link>
-      </footer>
-    </main>
+    <Gallery
+      initial={projects}
+      owner={owner}
+      previewing={previewing}
+      avatarUrl={settings?.avatarUrl ?? null}
+    />
   );
 }

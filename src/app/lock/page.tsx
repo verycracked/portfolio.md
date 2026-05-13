@@ -6,10 +6,11 @@ import { useState } from "react";
 export default function LockPage() {
   const router = useRouter();
   const search = useSearchParams();
-  const next = search.get("next") || "/edit";
+  const next = search.get("next") || "/";
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [shake, setShake] = useState(0);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,8 @@ export default function LockPage() {
     });
     setBusy(false);
     if (!res.ok) {
-      setError("wrong password");
+      setError("Wrong password.");
+      setShake((n) => n + 1);
       return;
     }
     router.push(next);
@@ -30,28 +32,29 @@ export default function LockPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-stone-50 px-6 dark:bg-stone-950">
+    <main className="flex min-h-[calc(100vh-1rem)] items-center justify-center px-6">
       <form
+        key={shake}
         onSubmit={submit}
-        className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-900"
+        className={`animate-fade-rise w-full max-w-[320px] rounded-[6px] border border-border bg-content p-5 ${shake ? "animate-nudge-x" : ""}`}
       >
-        <h1 className="text-lg font-medium">portfolio.md</h1>
-        <p className="mt-1 mb-6 text-sm text-stone-500">enter password to edit</p>
+        <h1 className="text-[14px] font-semibold text-fg">portfolio.md</h1>
+        <p className="mt-1 mb-5 text-[13px] text-muted">Enter password to edit.</p>
         <input
           autoFocus
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="password"
-          className="w-full rounded-md border border-stone-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-stone-500 dark:border-stone-700"
+          placeholder="Password"
+          className="w-full rounded-[6px] border border-border bg-content px-3 py-2 text-fg outline-none transition-colors placeholder:text-tertiary focus:border-fg"
         />
-        {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
+        {error && <p className="mt-2 text-[12px] text-muted">{error}</p>}
         <button
           type="submit"
           disabled={busy || !password}
-          className="mt-4 w-full rounded-md bg-stone-900 px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+          className="mt-4 w-full rounded-[6px] bg-fg px-4 py-2 text-[13px] font-medium text-content transition-opacity disabled:opacity-40"
         >
-          {busy ? "checking…" : "unlock"}
+          {busy ? "Checking…" : "Unlock"}
         </button>
       </form>
     </main>

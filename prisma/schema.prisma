@@ -7,12 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Single page, single user. id is hard-coded to "main".
-model Page {
-  id          String   @id
-  contentJson Json?
-  contentMd   String   @default("")
-  updatedAt   DateTime @updatedAt
+model Project {
+  id            String          @id @default(cuid())
+  slug          String          @unique
+  title         String
+  description   String          @default("")
+  body          String          @default("")
+  heroImageUrl  String?
+  sourceUrl     String?
+  // HMAC hash of the visitor password. null = public. owner always has access.
+  passwordHash  String?
+  order         Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  images        ProjectImage[]
+}
+
+model ProjectImage {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url       String
+  caption   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// Singleton site settings. id is always "main".
+model Settings {
+  id        String   @id
+  avatarUrl String?
+  updatedAt DateTime @updatedAt
+}
+
+// Long-lived bearer tokens for the snapshot Chrome extension (and any other
+// external clients that talk to portfolio.md). The plaintext token is shown
+// once when minted; we store only the SHA-256 hash.
+model ExtensionToken {
+  id         String    @id @default(cuid())
+  label      String    @default("Snapshot extension")
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revoked    Boolean   @default(false)
 }
 
 model Project {

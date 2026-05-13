@@ -2,29 +2,27 @@ import { NextResponse } from "next/server";
 import { isAuthed } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const PAGE_ID = "main";
+const SETTINGS_ID = "main";
 
 type Body = {
-  contentJson?: unknown;
-  contentMd?: string;
+  avatarUrl?: string | null;
 };
 
 export async function PUT(req: Request) {
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-
   const body = (await req.json()) as Body;
+
   const data = {
-    contentJson: body.contentJson as never,
-    contentMd: body.contentMd ?? "",
+    ...(body.avatarUrl !== undefined && { avatarUrl: body.avatarUrl }),
   };
 
-  const page = await prisma.page.upsert({
-    where: { id: PAGE_ID },
+  const settings = await prisma.settings.upsert({
+    where: { id: SETTINGS_ID },
     update: data,
-    create: { id: PAGE_ID, ...data },
+    create: { id: SETTINGS_ID, ...data },
   });
 
-  return NextResponse.json(page);
+  return NextResponse.json(settings);
 }
