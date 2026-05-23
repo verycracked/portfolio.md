@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { isAuthed } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { r2, R2_BUCKET, R2_PUBLIC_URL } from "@/lib/r2";
+import { humanize, isValidSlug, slugify } from "@/lib/slug";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const ALLOWED = new Set([
@@ -34,8 +35,35 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unsupported type" }, { status: 415 });
   }
 
+  const projectRaw = form.get("project");
+  let projectId: string | null = null;
+  let projectSlug: string | null = null;
+
+  if (typeof projectRaw === "string" && projectRaw.trim() !== "") {
+    const slug = slugify(projectRaw);
+    if (!isValidSlug(slug)) {
+      return NextResponse.json({ error: "invalid project slug" }, { status: 400 });
+    }
+
+    const nameRaw = form.get("projectName");
+    const name =
+      typeof nameRaw === "string" && nameRaw.trim() !== ""
+        ? nameRaw.trim().slice(0, 100)
+        : humanize(slug);
+
+    const project = await prisma.project.upsert({
+      where: { slug },
+      update: {},
+      create: { slug, name },
+    });
+    projectId = project.id;
+    projectSlug = project.slug;
+  }
+
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
-  const key = `${nanoid(16)}.${ext}`;
+  const key = projectSlug
+    ? `${projectSlug}/${nanoid(16)}.${ext}`
+    : `${nanoid(16)}.${ext}`;
   const body = new Uint8Array(await file.arrayBuffer());
 
   await r2.send(
@@ -50,8 +78,8 @@ export async function POST(req: Request) {
 
   const url = `${R2_PUBLIC_URL.replace(/\/$/, "")}/${key}`;
   await prisma.asset.create({
-    data: { url, key, mime: file.type, size: file.size },
+    data: { url, key, mime: file.type, size: file.size, projectId },
   });
 
-  return NextResponse.json({ url });
+  return NextResponse.json({ url, project: projectSlug });
 }

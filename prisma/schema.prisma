@@ -15,6 +15,15 @@ model Page {
   updatedAt   DateTime @updatedAt
 }
 
+model Project {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  assets    Asset[]
+}
+
 model Asset {
   id        String   @id @default(cuid())
   url       String
@@ -22,4 +31,8 @@ model Asset {
   mime      String
   size      Int
   createdAt DateTime @default(now())
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
 }

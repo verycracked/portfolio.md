@@ -1,0 +1,48 @@
+import { NextResponse } from "next/server";
+import { isAuthed } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { isValidSlug } from "@/lib/slug";
+
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  if (!(await isAuthed())) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const { slug } = await params;
+  if (!isValidSlug(slug)) {
+    return NextResponse.json({ error: "invalid slug" }, { status: 400 });
+  }
+
+  const project = await prisma.project.findUnique({
+    where: { slug },
+    include: {
+      assets: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          url: true,
+          key: true,
+          mime: true,
+          size: true,
+          createdAt: true,
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    id: project.id,
+    slug: project.slug,
+    name: project.name,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt,
+    assets: project.assets,
+  });
+}
