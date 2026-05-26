@@ -335,6 +335,10 @@ export function Gallery({
 
   return (
     <DndContext
+      // Stable id stops dnd-kit's internal aria-describedby counter from
+      // drifting between SSR and client mount (which would otherwise cause
+      // a hydration warning on every Sortable inside this tree).
+      id="gallery-dnd"
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}

@@ -11,7 +11,7 @@ import type { GalleryGroup } from "@/components/gallery-types";
 import type { ProjectSummary } from "@/lib/case-study";
 
 export const metadata: Metadata = {
-  title: { absolute: "vc billingsley — design engineer" },
+  title: { absolute: "V.C. Billingsley — design engineer" },
 };
 
 // Single unified page: markdown body (about content) on top, grouped project

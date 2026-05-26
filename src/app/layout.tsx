@@ -16,10 +16,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "vc billingsley",
-    template: "%s — vc billingsley",
+    default: "V.C. Billingsley",
+    template: "%s — V.C. Billingsley",
   },
-  description: "vc billingsley — design engineer, san francisco.",
+  description: "V.C. Billingsley — design engineer, san francisco.",
 };
 
 export default function RootLayout({

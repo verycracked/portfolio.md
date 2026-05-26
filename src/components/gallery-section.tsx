@@ -107,7 +107,7 @@ export function VisitorGallerySection({ group }: CommonProps) {
   if (group.projects.length === 0) return null;
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-[14px] font-medium tracking-tight text-fg">
+      <h2 className="border-b border-border-soft pb-2 text-[13px] font-medium tracking-tight text-muted">
         {group.name}
       </h2>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:auto-rows-[260px]">
@@ -151,11 +151,13 @@ function SectionHeader({
   };
 
   return (
-    <div className="group/header flex items-center gap-2 border-b border-border-soft pb-2">
+    <div className="group/header relative flex items-center gap-2 border-b border-border-soft pb-2">
+      {/* Drag handle floats outside the header flow so the title can sit
+          flush to the left edge of the section. Shows on hover only. */}
       <button
         type="button"
         aria-label="Drag section"
-        className="-ml-1 inline-flex h-6 w-5 cursor-grab items-center justify-center text-tertiary opacity-0 transition-opacity active:cursor-grabbing group-hover/header:opacity-100"
+        className="absolute -left-6 top-1/2 -mt-3 inline-flex h-6 w-5 cursor-grab items-center justify-center text-tertiary opacity-0 transition-opacity active:cursor-grabbing group-hover/header:opacity-100"
         {...dragHandleProps}
       >
         <DotsSixVertical size={14} weight="bold" aria-hidden />
@@ -175,7 +177,7 @@ function SectionHeader({
               setEditing(false);
             }
           }}
-          className="flex-1 bg-transparent text-[14px] font-medium tracking-tight text-fg outline-none"
+          className="flex-1 bg-transparent text-[13px] font-medium tracking-tight text-muted outline-none"
           spellCheck={false}
           autoFocus
         />
@@ -183,7 +185,7 @@ function SectionHeader({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="-mx-1 flex-1 rounded-[4px] px-1 text-left text-[14px] font-medium tracking-tight text-fg hover:bg-hover"
+          className="-mx-1 flex-1 rounded-[4px] px-1 text-left text-[13px] font-medium tracking-tight text-muted hover:bg-hover hover:text-fg"
         >
           {name}
         </button>
