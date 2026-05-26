@@ -48,20 +48,26 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-bg">
-        {/* Floating content card pattern: p-2 shell on app bg, hard-bordered content card inside */}
-        <div className="min-h-screen p-2">
-          <div className="double-stroke relative min-h-[calc(100vh-1rem)] rounded-[2px] bg-content">
-            {/* Top-leftmost wordmark, anchored to the content card */}
+      <body className="h-dvh overflow-hidden bg-bg">
+        {/* Floating content card pattern: p-2 shell on the app background;
+            the card itself is pinned to the viewport and only the inner
+            content scrolls. Using h-dvh so the iOS dynamic toolbar doesn't
+            clip the frame at the bottom. */}
+        <div className="h-dvh p-2">
+          <div className="double-stroke relative h-full overflow-hidden rounded-[2px] bg-content">
+            {/* Top-leftmost wordmark, anchored to the (fixed) content card
+                so it stays visible while the inner area scrolls. */}
             <Link
               href="/"
               aria-label="portfolio.md home"
-              className="absolute left-6 top-6 z-10 hidden h-6 w-7 items-center justify-center md:inline-flex"
+              className="absolute left-6 top-6 z-20 hidden h-6 w-7 items-center justify-center md:inline-flex"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/vc-logo.svg" alt="" className="h-full w-full" />
             </Link>
-            <PageTransition>{children}</PageTransition>
+            <div className="h-full overflow-y-auto overflow-x-hidden">
+              <PageTransition>{children}</PageTransition>
+            </div>
           </div>
         </div>
       </body>
