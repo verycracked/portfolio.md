@@ -21,6 +21,12 @@ model Project {
   // HMAC hash of the visitor password. null = public. owner always has access.
   passwordHash  String?
   order         Int             @default(0)
+  // Bento-grid sizing on the portfolio page. colSpan is the number of
+  // 4-column grid cells the card occupies horizontally (1–4); rowSpan is
+  // the same vertically (1–2). Both default to 1 so existing projects keep
+  // the standard square cell.
+  colSpan       Int             @default(1)
+  rowSpan       Int             @default(1)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   images        ProjectImage[]
@@ -69,6 +75,17 @@ model ProjectImage {
 model Settings {
   id        String   @id
   avatarUrl String?
+  updatedAt DateTime @updatedAt
+}
+
+// Editable nomo-style markdown documents (e.g., the homepage at slug="home",
+// the cv at slug="cv"). Body holds the raw source — frontmatter included.
+// When no row exists for a slug, `readNomoDocument` falls back to the seed
+// file at `content/<slug>.md`. Owners edit via /api/pages/[slug].
+model Page {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  body      String
   updatedAt DateTime @updatedAt
 }
 

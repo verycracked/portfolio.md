@@ -188,6 +188,16 @@ select {
   animation-delay: var(--reveal-delay, 0ms);
 }
 
+/* Long-form dissolve for body content (about page markdown, etc.). Same
+ * keyframe as fade-in, slower so the entry reads as a deliberate dissolve.
+ * SSR-safe: starts at opacity 0 via CSS rule, runs immediately on first
+ * paint regardless of JS hydration timing. */
+.animate-dissolve {
+  opacity: 0;
+  animation: fade-in 700ms var(--ease-out-quart) forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
 /* Refined error nudge — 3 small horizontal kicks, no overshoot. */
 @keyframes nudge-x {
   0%, 100% { transform: translateX(0); }
@@ -275,28 +285,39 @@ a, button, input, textarea, select {
   mask-composite: exclude;
 }
 
-/* Nomo pill: on hover the ↗ icon shoots up-and-right, fades, then a new
- * arrow eases back in from the lower-left — the "magic link" swap effect. */
-@keyframes nomo-arrow-shoot {
-  0% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
-  45% {
-    transform: translate(6px, -6px);
-    opacity: 0;
-  }
-  46% {
-    transform: translate(-4px, 4px);
-    opacity: 0;
-  }
-  100% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
+/* Nomo pill arrows: two SVGs stacked at the same position swap on hover.
+ *   • .nomo-pill-arrow-rest  — visible at rest. Shoots up-and-right + fades.
+ *   • .nomo-pill-arrow-hover — starts down-and-left + invisible. Eases in.
+ * Pure CSS transitions on both arrows (no keyframes), so a mid-flight
+ * mouse-out smoothly returns each arrow to its rest state instead of
+ * snapping — exactly what keyframe-based animations can't do gracefully.
+ */
+.nomo-pill-arrow-rest,
+.nomo-pill-arrow-hover {
+  transition: transform 320ms var(--ease-out-quart),
+    opacity 320ms var(--ease-out-quart);
+  will-change: transform, opacity;
 }
-.nomo-pill:hover .nomo-pill-arrow {
-  animation: nomo-arrow-shoot 520ms var(--ease-out-quart);
+.nomo-pill-arrow-hover {
+  transform: translate(-6px, 6px);
+  opacity: 0;
+}
+.nomo-pill:hover .nomo-pill-arrow-rest {
+  transform: translate(6px, -6px);
+  opacity: 0;
+}
+.nomo-pill:hover .nomo-pill-arrow-hover {
+  transform: translate(0, 0);
+  opacity: 1;
+}
+
+/* Case-study pills: hide the native cursor so the JS-rendered ↗ glyph
+ * (rendered by <CaseStudyPill>) can take its place. `pointer` is the
+ * fallback for browsers without `none` support — they keep the regular
+ * pointer cursor, which is the previous behaviour. */
+.nomo-case-study-pill,
+.nomo-case-study-pill * {
+  cursor: none;
 }
 
 /* Respect reduced-motion preferences */

@@ -22,6 +22,7 @@ import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
 import type { Components } from "react-markdown";
 import type { ProjectSummary } from "@/lib/case-study";
 import { CaseStudyPill } from "@/components/case-study-pill";
+import { PillArrow } from "@/components/pill-arrow";
 import { slugify } from "@/lib/slug";
 
 /** Hidden marker we push into the markdown title attribute so the `a`
@@ -33,9 +34,9 @@ const PILL_TITLE = "__nomo_pill__";
  *  rest of the site uses for inline tokens; hover bumps the bg one shade
  *  lighter for affordance. */
 const INLINE_PILL_CLASS =
-  "nomo-pill mx-0.5 inline-flex items-center gap-1.5 rounded-[6px] bg-hover px-2 py-0.5 align-middle text-[12.5px] leading-none text-fg ring-1 ring-inset ring-border-soft transition-colors hover:bg-border";
+  "nomo-pill mx-0.5 inline-flex items-center gap-1.5 rounded-[6px] bg-hover px-2 py-0.5 align-middle text-[14px] leading-none text-fg ring-1 ring-inset ring-border-soft transition-colors hover:bg-border";
 const STANDALONE_PILL_CLASS =
-  "nomo-pill inline-flex w-fit items-center gap-1.5 rounded-[6px] bg-hover px-2 py-1 text-[12.5px] leading-none text-fg ring-1 ring-inset ring-border-soft transition-colors hover:bg-border";
+  "nomo-pill inline-flex w-fit items-center gap-1.5 rounded-[6px] bg-hover px-2 py-1.5 text-[14px] leading-none text-fg ring-1 ring-inset ring-border-soft transition-colors hover:bg-border";
 
 type RenderContext = {
   /** Replaces `{{avatar}}` in the markdown source. */
@@ -161,12 +162,7 @@ function NomoPill({
       className={STANDALONE_PILL_CLASS}
     >
       <span>{label}</span>
-      <ArrowUpRight
-        weight="bold"
-        size={11}
-        aria-hidden
-        className="nomo-pill-arrow text-tertiary"
-      />
+      <PillArrow />
     </a>
   );
 }
@@ -201,12 +197,7 @@ function buildComponents(ctx: RenderContext): Components {
         return (
           <a href={url} target={target} rel={rel} className={INLINE_PILL_CLASS}>
             <span>{children}</span>
-            <ArrowUpRight
-              weight="bold"
-              size={11}
-              aria-hidden
-              className="nomo-pill-arrow text-tertiary"
-            />
+            <PillArrow />
           </a>
         );
       }
@@ -258,7 +249,7 @@ function buildComponents(ctx: RenderContext): Components {
       );
     },
     p({ children }) {
-      return <p className="text-[14px] leading-[1.7] text-fg">{children}</p>;
+      return <p className="text-[16px] leading-[1.7] text-fg">{children}</p>;
     },
   };
 }

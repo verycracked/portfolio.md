@@ -13,6 +13,9 @@ type Body = {
   /** Raw password from owner. null/empty string clears protection. */
   password?: string | null;
   order?: number;
+  /** Bento sizing on /portfolio. Clamped to 1..4 / 1..2. */
+  colSpan?: number;
+  rowSpan?: number;
 };
 
 function slugify(input: string) {
@@ -42,6 +45,12 @@ export async function PUT(
   if (data.heroImageUrl !== undefined) update.heroImageUrl = data.heroImageUrl;
   if (data.sourceUrl !== undefined) update.sourceUrl = data.sourceUrl;
   if (data.order !== undefined) update.order = data.order;
+  if (data.colSpan !== undefined) {
+    update.colSpan = Math.min(4, Math.max(1, Math.round(data.colSpan)));
+  }
+  if (data.rowSpan !== undefined) {
+    update.rowSpan = Math.min(2, Math.max(1, Math.round(data.rowSpan)));
+  }
 
   if (data.password !== undefined) {
     update.passwordHash = data.password ? hashPassword(data.password) : null;

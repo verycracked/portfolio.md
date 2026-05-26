@@ -9,7 +9,7 @@ export default async function SettingsPage() {
     <main className="mx-auto max-w-2xl px-8 py-12">
       <header className="mb-10 flex items-center justify-between">
         <Link
-          href="/portfolio.md"
+          href="/portfolio"
           className="text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
         >
           ← Back

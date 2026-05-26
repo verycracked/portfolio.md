@@ -4,8 +4,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { usePathname } from "next/navigation";
 
 /**
- * Wraps children in a fade transition keyed by pathname.
- * Tasteful dissolve: 200ms opacity + 4px Y nudge, no exit overlap.
+ * Wraps children in a pure-opacity dissolve transition keyed by pathname.
+ * No translation — clean crossfade-style fade-out → fade-in so navigating
+ * between routes feels like the new page dissolves into place.
  */
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,10 +14,10 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={pathname}
-        initial={{ opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
-        transition={{ duration: 0.2, ease: [0.22, 0.61, 0.36, 1] }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.24, ease: "linear" }}
       >
         {children}
       </motion.div>

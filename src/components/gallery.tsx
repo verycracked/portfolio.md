@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Image as ImageIcon, Lock, Pencil, Plus } from "@phosphor-icons/react/dist/ssr";
-import { EditableText } from "@/components/editable-text";
-import { Avatar } from "@/components/avatar";
-import { usePointerLight } from "@/lib/use-pointer-light";
+import { Reorder } from "motion/react";
+import { ArrowUpRight, Image as ImageIcon, Lock, Plus } from "@phosphor-icons/react/dist/ssr";
 import { isVideoUrl } from "@/lib/media";
 
 export type GalleryProject = {
@@ -16,123 +14,156 @@ export type GalleryProject = {
   description: string;
   heroImageUrl: string | null;
   isProtected: boolean;
+  /** 1–4 — number of grid columns this card occupies horizontally. */
+  colSpan: number;
+  /** 1–2 — number of grid rows this card occupies vertically. */
+  rowSpan: number;
 };
 
+// Static class maps so Tailwind's JIT can see the literal class names.
+// Dynamic interpolation (`col-span-${n}`) wouldn't be picked up. Grid caps
+// at 2 columns × 2 rows — four distinct card sizes total.
+const COL_SPAN_CLASS: Record<number, string> = {
+  1: "sm:col-span-1",
+  2: "sm:col-span-2",
+};
+const ROW_SPAN_CLASS: Record<number, string> = {
+  1: "sm:row-span-1",
+  2: "sm:row-span-2",
+};
+
+function spanClass(colSpan: number, rowSpan: number): string {
+  const c = COL_SPAN_CLASS[Math.min(2, Math.max(1, colSpan))] ?? COL_SPAN_CLASS[1];
+  const r = ROW_SPAN_CLASS[Math.min(2, Math.max(1, rowSpan))] ?? ROW_SPAN_CLASS[1];
+  return `${c} ${r}`;
+}
+
+// How long to wait after a drag before pushing the new order to the API.
+// Keeps rapid reorder gestures from spamming the network.
+const REORDER_SAVE_DEBOUNCE_MS = 350;
+
+/**
+ * Project gallery grid. The page chrome (avatar + tabs + owner actions) is
+ * owned by the (site) layout's SiteShell; this component only renders the
+ * project cards + the "new project" affordance for owners.
+ *
+ * Owner view enables drag-to-reorder via motion's `Reorder`. Visitors see a
+ * plain grid. Drag persists to `POST /api/projects/reorder` on a debounce.
+ */
 export function Gallery({
   initial,
   owner,
   previewing = false,
-  avatarUrl,
 }: {
   initial: GalleryProject[];
   owner: boolean;
   previewing?: boolean;
-  avatarUrl: string | null;
 }) {
-  // The "effective owner" controls editability. When previewing, treat the
-  // session as if it were a visitor — even though the cookie is still set.
   const editable = owner && !previewing;
-  return (
-    <main className="mx-auto max-w-3xl px-8 py-16">
-      {(editable || avatarUrl) && (
-        <div
-          className="animate-fade-rise mb-8"
-          style={{ ["--reveal-delay" as string]: "40ms" }}
-        >
-          <Avatar initialUrl={avatarUrl} editable={editable} />
-        </div>
-      )}
-      <header
-        className="animate-fade-rise mb-12 flex items-end justify-between"
-        style={{ ["--reveal-delay" as string]: "120ms" }}
+  const [projects, setProjects] = useState(initial);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    },
+    []
+  );
+
+  // Re-sync when the server data changes (e.g., after a router.refresh()
+  // post-create or post-delete in NewProjectCard / Card).
+  useEffect(() => {
+    setProjects(initial);
+  }, [initial]);
+
+  const persistOrder = (next: GalleryProject[]) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      void fetch("/api/projects/reorder", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ids: next.map((p) => p.id) }),
+      });
+    }, REORDER_SAVE_DEBOUNCE_MS);
+  };
+
+  const handleReorder = (next: GalleryProject[]) => {
+    setProjects(next);
+    persistOrder(next);
+  };
+
+  if (projects.length === 0 && !editable) {
+    return (
+      <div
+        className="animate-fade-rise rounded-[8px] border border-border bg-content px-6 py-16 text-center"
+        style={{ ["--reveal-delay" as string]: "200ms" }}
       >
-        <div>
-          <h1 className="text-[14px] font-semibold text-fg">Projects</h1>
-          <p className="mt-1 text-[13px] text-muted">
-            A collection of things I&apos;ve made.
-          </p>
-        </div>
-        {owner && <OwnerHeaderActions previewing={previewing} />}
-      </header>
+        <p className="text-[13px] text-muted">No projects yet.</p>
+      </div>
+    );
+  }
 
-      {initial.length === 0 && !editable ? (
-        <div
-          className="animate-fade-rise rounded-[8px] border border-border bg-content px-6 py-16 text-center"
-          style={{ ["--reveal-delay" as string]: "200ms" }}
-        >
-          <p className="text-[13px] text-muted">No projects yet.</p>
-        </div>
-      ) : (
-        <div className="grid auto-rows-fr grid-cols-1 gap-6 sm:grid-cols-2">
-          {initial.map((p, i) => (
-            <div
-              key={p.id}
-              className="animate-fade-rise"
-              style={{ ["--reveal-delay" as string]: `${200 + i * 60}ms` }}
-            >
-              <Card project={p} owner={editable} />
-            </div>
-          ))}
-          {editable && (
-            <div
-              className="animate-fade-rise"
-              style={{
-                ["--reveal-delay" as string]: `${200 + initial.length * 60}ms`,
-              }}
-            >
-              <NewProjectCard />
-            </div>
-          )}
-        </div>
-      )}
+  if (!editable) {
+    // Visitor (and owner-previewing): static bento grid, no drag affordances.
+    return (
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:auto-rows-[260px]">
+        {projects.map((p, i) => (
+          <div
+            key={p.id}
+            className={`animate-fade-rise ${spanClass(p.colSpan, p.rowSpan)}`}
+            style={{ ["--reveal-delay" as string]: `${200 + i * 60}ms` }}
+          >
+            <Card project={p} owner={false} />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
-    </main>
-  );
-}
-
-function OwnerHeaderActions({ previewing }: { previewing: boolean }) {
+  // Owner: drag-to-reorder bento grid. The "+ new project" tile stays in
+  // the grid (after the last project) as a plain div — not a Reorder.Item —
+  // so motion ignores it during drag and it always sits at the end.
   return (
-    <div className="flex items-center gap-4 text-[12px]">
-      {previewing ? (
-        <Link
-          href="/portfolio.md"
-          className="inline-flex items-center gap-1 text-fg underline-offset-2 hover:underline"
+    <Reorder.Group
+      as="div"
+      axis="y"
+      values={projects}
+      onReorder={handleReorder}
+      className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:auto-rows-[260px]"
+      layoutScroll
+    >
+      {projects.map((p, i) => (
+        <Reorder.Item
+          key={p.id}
+          value={p}
+          as="div"
+          className={`animate-fade-rise touch-none ${spanClass(p.colSpan, p.rowSpan)}`}
+          style={{ ["--reveal-delay" as string]: `${200 + i * 60}ms` }}
+          whileDrag={{ scale: 1.02, zIndex: 30 }}
         >
-          <Pencil weight="fill" size={12} aria-hidden />
-          Edit
-        </Link>
-      ) : (
-        <>
-          <Link
-            href="/settings"
-            className="text-muted underline-offset-2 hover:text-fg hover:underline"
-          >
-            Settings
-          </Link>
-          <Link
-            href="/portfolio.md?preview=1"
-            className="text-muted underline-offset-2 hover:text-fg hover:underline"
-          >
-            Preview ↗
-          </Link>
-        </>
-      )}
-    </div>
+          <Card project={p} owner />
+        </Reorder.Item>
+      ))}
+      <div
+        key="__new-project"
+        className="animate-fade-rise"
+        style={{
+          ["--reveal-delay" as string]: `${200 + projects.length * 60}ms`,
+        }}
+      >
+        <NewProjectCard />
+      </div>
+    </Reorder.Group>
   );
 }
 
-/* Outer card shell — matches the Paper selection:
- *   - 1px ring border (single ring shadow on top of bg)
- *   - 4px inner padding around hero
- *   - Text block padded 12px block / 16px inline
+/* Outer card shell — static (no pointer-light tilt or hover highlight).
+ *   - 1px ring border via the double-stroke chrome
+ *   - 4px inner padding around the hero
  */
 function CardShell({ children }: { children: React.ReactNode }) {
-  const light = usePointerLight();
   return (
-    <div
-      {...light}
-      className="double-stroke flex h-full flex-col overflow-hidden rounded-[8px] bg-hover"
-    >
+    <div className="double-stroke flex h-full flex-col overflow-hidden rounded-[8px] bg-hover">
       <div className="relative z-[1] flex flex-1 flex-col gap-1 p-1">
         {children}
       </div>
@@ -140,86 +171,32 @@ function CardShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Image-only portfolio card. Click navigates to the project surface; the
+ * hero (image or video) fills the entire card. Title + description live on
+ * the project page itself, not on the card thumbnail.
+ */
 function Card({ project, owner }: { project: GalleryProject; owner: boolean }) {
-  const [title, setTitle] = useState(project.title);
-  const [description, setDescription] = useState(project.description);
-  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    if (debounce.current) clearTimeout(debounce.current);
-  }, []);
-
-  const save = (patch: Partial<{ title: string; description: string }>) => {
-    if (debounce.current) clearTimeout(debounce.current);
-    debounce.current = setTimeout(() => {
-      void fetch(`/api/projects/${project.id}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(patch),
-      });
-      // NOTE: do NOT router.refresh() here — it refetches server data and
-      // clobbers characters the user is still typing.
-    }, 500);
-  };
-
-  if (!owner) {
-    return (
-      <Link href={`/projects/${project.slug}`} className="group block h-full">
-        <CardShell>
-          <HeroFrame
-            url={project.heroImageUrl}
-            title={project.title}
-            protected={project.isProtected}
-          />
-          <div className="flex flex-1 flex-col px-4 py-3">
-            <h2 className="text-[14px] font-medium text-fg">{project.title}</h2>
-            {project.description && (
-              <p className="mt-1 text-[13px] text-muted">{project.description}</p>
-            )}
-          </div>
-        </CardShell>
-      </Link>
-    );
-  }
-
   return (
-    <div className="group h-full">
+    <Link
+      href={`/projects/${project.slug}`}
+      className="group relative block h-full"
+      aria-label={project.title}
+    >
       <CardShell>
-        <Link href={`/projects/${project.slug}`} className="relative block">
-          <HeroFrame
-            url={project.heroImageUrl}
-            title={project.title}
-            protected={project.isProtected}
-          />
-          <span className="pointer-events-none absolute right-2 top-2 inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/90 px-2 py-0.5 text-[10px] text-muted opacity-0 transition-opacity group-hover:opacity-100">
-            Open
-            <ArrowUpRight weight="fill" size={10} aria-hidden />
-          </span>
-        </Link>
-        <div className="flex flex-1 flex-col gap-1 px-4 py-3">
-          <EditableText
-            value={title}
-            onChange={(v) => {
-              setTitle(v);
-              save({ title: v });
-            }}
-            placeholder="Untitled project"
-            className="text-[14px] font-medium text-fg"
-            as="h2"
-          />
-          <EditableText
-            value={description}
-            onChange={(v) => {
-              setDescription(v);
-              save({ description: v });
-            }}
-            placeholder="Short description"
-            className="text-[13px] text-muted"
-            as="p"
-          />
-        </div>
+        <HeroFrame
+          url={project.heroImageUrl}
+          title={project.title}
+          protected={project.isProtected}
+        />
       </CardShell>
-    </div>
+      {owner && (
+        <span className="pointer-events-none absolute right-3 top-3 inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/90 px-2 py-0.5 text-[10px] text-muted opacity-0 transition-opacity group-hover:opacity-100">
+          Open
+          <ArrowUpRight weight="fill" size={10} aria-hidden />
+        </span>
+      )}
+    </Link>
   );
 }
 
@@ -233,7 +210,7 @@ function HeroFrame({
   protected?: boolean;
 }) {
   return (
-    <div className="relative aspect-[16/10] overflow-hidden rounded-[6px] border border-border bg-hover">
+    <div className="relative aspect-[16/10] flex-1 overflow-hidden rounded-[6px] border border-border bg-hover sm:aspect-auto">
       {url ? (
         isVideoUrl(url) ? (
           <video
@@ -244,7 +221,7 @@ function HeroFrame({
             playsInline
             autoPlay
             preload="metadata"
-            className="h-full w-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.02]"
+            className="h-full w-full object-cover"
           />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
@@ -253,7 +230,7 @@ function HeroFrame({
             alt={title}
             loading="lazy"
             onLoad={(e) => e.currentTarget.classList.add("is-loaded")}
-            className="img-fade h-full w-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.02]"
+            className="img-fade h-full w-full object-cover"
           />
         )
       ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image as ImageIcon } from "@phosphor-icons/react/dist/ssr";
 import { EditableText } from "@/components/editable-text";
 import { MEDIA_ACCEPT, isVideoUrl } from "@/lib/media";
@@ -54,6 +54,7 @@ export function SurfaceEditor({
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heroInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(
     () => () => {
@@ -76,19 +77,26 @@ export function SurfaceEditor({
   };
 
   const uploadHero = async (file: File) => {
+    setUploadError(null);
     try {
       const url = await uploadFile(file, projectSlug);
       immediateSave({ heroImageUrl: url });
-    } catch {
-      // silent
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "upload failed");
     }
   };
 
   const addGalleryFiles = async (files: File[]) => {
     if (files.length === 0) return;
+    setUploadError(null);
     const uploads = await Promise.allSettled(
       files.map((f) => uploadFile(f, projectSlug))
     );
+    const firstFailure = uploads.find((r) => r.status === "rejected");
+    if (firstFailure && firstFailure.status === "rejected") {
+      const reason = firstFailure.reason;
+      setUploadError(reason instanceof Error ? reason.message : "upload failed");
+    }
     for (const result of uploads) {
       if (result.status !== "fulfilled") continue;
       const image = await addSurfaceImage(projectId, surface.id, result.value);
@@ -166,6 +174,22 @@ export function SurfaceEditor({
           }}
           className="hidden"
         />
+        {uploadError && (
+          <p
+            role="alert"
+            className="mt-2 flex items-start justify-between gap-3 rounded-[4px] border border-border-soft bg-hover px-2.5 py-1.5 text-[11px] text-muted"
+          >
+            <span>{uploadError}</span>
+            <button
+              type="button"
+              onClick={() => setUploadError(null)}
+              className="text-tertiary hover:text-fg"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </p>
+        )}
       </div>
 
       {/* Body */}

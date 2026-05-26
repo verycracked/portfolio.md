@@ -6,7 +6,11 @@ import { prisma } from "@/lib/prisma";
 import { r2, R2_BUCKET, R2_PUBLIC_URL } from "@/lib/r2";
 import { humanize, isValidSlug, slugify } from "@/lib/slug";
 
-const MAX_BYTES = 8 * 1024 * 1024;
+// Per-kind size caps. Images stay tight (8 MB is plenty for hero stills);
+// videos get a much bigger budget since even short clips routinely run past
+// the image cap.
+const MAX_BYTES_IMAGE = 8 * 1024 * 1024; // 8 MB
+const MAX_BYTES_VIDEO = 100 * 1024 * 1024; // 100 MB
 const ALLOWED = new Set([
   "image/jpeg",
   "image/png",
@@ -18,6 +22,14 @@ const ALLOWED = new Set([
   "video/webm",
 ]);
 
+function maxBytesFor(mime: string): number {
+  return mime.startsWith("video/") ? MAX_BYTES_VIDEO : MAX_BYTES_IMAGE;
+}
+
+function mb(bytes: number): string {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 export async function POST(req: Request) {
   if (!(await isOwnerOrBearer(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -28,11 +40,22 @@ export async function POST(req: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "no file" }, { status: 400 });
   }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "file too large" }, { status: 413 });
-  }
   if (!ALLOWED.has(file.type)) {
-    return NextResponse.json({ error: "unsupported type" }, { status: 415 });
+    return NextResponse.json(
+      {
+        error: `Unsupported type "${file.type || "unknown"}". Use jpg, png, gif, webp, avif, svg, mp4, or webm.`,
+      },
+      { status: 415 }
+    );
+  }
+  const max = maxBytesFor(file.type);
+  if (file.size > max) {
+    return NextResponse.json(
+      {
+        error: `File is ${mb(file.size)}; ${file.type.startsWith("video/") ? "videos" : "images"} are capped at ${mb(max)}.`,
+      },
+      { status: 413 }
+    );
   }
 
   const projectRaw = form.get("project");

@@ -25,7 +25,12 @@ export async function uploadFile(
   fd.append("file", file);
   if (projectSlug) fd.append("project", projectSlug);
   const res = await fetch("/api/upload", { method: "POST", body: fd });
-  if (!res.ok) throw new Error("upload failed");
+  if (!res.ok) {
+    // Pull the server's explanation through so callers can show it. Falls
+    // back to a status-code message if the body wasn't JSON.
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? `upload failed (${res.status})`);
+  }
   const data = (await res.json()) as { url: string };
   return data.url;
 }

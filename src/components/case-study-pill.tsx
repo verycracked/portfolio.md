@@ -11,6 +11,7 @@ import {
 } from "motion/react";
 import { ArrowUpRight, Lock } from "@phosphor-icons/react/dist/ssr";
 import { isVideoUrl } from "@/lib/media";
+import { PillArrow } from "@/components/pill-arrow";
 import type { ProjectSummary } from "@/lib/case-study";
 
 type Props = {
@@ -32,10 +33,18 @@ const CLOSE_DELAY_MS = 140;
 // feels reactive, damped enough that it doesn't jitter when the mouse stops.
 const FOLLOW_SPRING = { stiffness: 600, damping: 40, mass: 0.5 } as const;
 
-// Offset between the cursor tip and the tooltip's bottom-left corner. Kept
-// tight so the tooltip feels anchored to the cursor.
-const OFFSET_X = 6;
-const OFFSET_Y = 8;
+// Layout offsets (px) relative to the raw cursor coords:
+//   • cursor glyph sits at (0, 0)
+//   • preview image floats just to the right of the glyph
+//   • text tooltip stacks below the preview image
+const CURSOR_GLYPH_SIZE = 16;
+const PREVIEW_OFFSET_X = 22;
+const PREVIEW_OFFSET_Y = -6;
+const PREVIEW_WIDTH = 132;
+const PREVIEW_HEIGHT = 82; // 132 × 82 ≈ 16:10
+const TOOLTIP_OFFSET_X = 22;
+// Tooltip sits below the preview image with a small gap.
+const TOOLTIP_OFFSET_Y = PREVIEW_OFFSET_Y + PREVIEW_HEIGHT + 6;
 
 /**
  * Pill that matched a portfolio project by slug. At rest it's visually
@@ -58,7 +67,10 @@ export function CaseStudyPill({
   const [open, setOpen] = useState(false);
   // `mounted` gates the createPortal call so we don't try to access
   // `document` during SSR or the very first client render (before commit).
+  // The setState-in-effect is the idiomatic mount-detection pattern; no
+  // external system to subscribe to, just a one-shot "we're past hydration".
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -113,7 +125,8 @@ export function CaseStudyPill({
         rel={external ? "noopener noreferrer" : undefined}
         data-case-study={project.slug}
         aria-describedby={open ? `case-study-${project.slug}` : undefined}
-        className={className}
+        // Adds the custom ↗ cursor on top of the inherited pill chrome.
+        className={`${className} nomo-case-study-pill`}
         onMouseEnter={(e) => {
           // Seed the spring at the first cursor position so the tooltip
           // doesn't fly in from a stale (0,0) when first opened.
@@ -132,47 +145,53 @@ export function CaseStudyPill({
         }}
       >
         <span>{label}</span>
-        <ArrowUpRight
-          weight="bold"
-          size={11}
-          aria-hidden
-          className="nomo-pill-arrow text-tertiary"
-        />
+        <PillArrow />
       </a>
 
       {mounted &&
         createPortal(
           <AnimatePresence>
             {open && (
+              <motion.span
+                aria-hidden
+                className="pointer-events-none fixed z-[102] text-fg"
+                style={{ left: x, top: y }}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.7 }}
+                transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
+                key="cursor-glyph"
+              >
+                <ArrowUpRight
+                  weight="bold"
+                  size={CURSOR_GLYPH_SIZE}
+                  aria-hidden
+                />
+              </motion.span>
+            )}
+
+            {open && project.heroImageUrl && (
               <motion.div
-                id={`case-study-${project.slug}`}
-                role="tooltip"
-                className="double-stroke pointer-events-auto fixed z-[100] w-[280px] origin-bottom-left rounded-[8px] bg-content p-3"
-            // `left`/`top` come from the springs (cursor coords); the
-            // transform shifts the tooltip's bottom-left anchor so the box
-            // sits above + right of the cursor. The translate is part of
-            // motion's transform stack and won't fight the position values.
-            style={{
-              left: x,
-              top: y,
-              translateX: OFFSET_X,
-              translateY: `calc(-100% - ${OFFSET_Y}px)`,
-            }}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-            // Keep the tooltip stable once the cursor enters it so the user
-            // can actually reach the CTAs without it sliding away.
-            onMouseEnter={clearTimers}
-            onMouseLeave={requestClose}
-          >
-            {project.heroImageUrl && (
-              <div className="relative z-[1] mb-3 aspect-[16/10] overflow-hidden rounded-[6px] border border-border-soft bg-hover">
+                aria-hidden
+                className="double-stroke pointer-events-none fixed z-[101] origin-top-left overflow-hidden rounded-[6px] bg-content"
+                style={{
+                  left: x,
+                  top: y,
+                  width: PREVIEW_WIDTH,
+                  height: PREVIEW_HEIGHT,
+                  translateX: PREVIEW_OFFSET_X,
+                  translateY: PREVIEW_OFFSET_Y,
+                }}
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+                key="case-study-preview"
+              >
                 {isVideoUrl(project.heroImageUrl) ? (
                   <video
                     src={project.heroImageUrl}
-                    className="h-full w-full object-cover"
+                    className="relative z-[1] h-full w-full object-cover"
                     muted
                     loop
                     playsInline
@@ -184,51 +203,70 @@ export function CaseStudyPill({
                   <img
                     src={project.heroImageUrl}
                     alt=""
-                    className="h-full w-full object-cover"
+                    className="relative z-[1] h-full w-full object-cover"
                   />
                 )}
-              </div>
+              </motion.div>
             )}
 
-            <div className="relative z-[1] mb-3 flex flex-col gap-1">
-              <div className="flex items-center gap-1.5">
-                <h4 className="text-[13px] font-medium text-fg">
-                  {project.title}
-                </h4>
-                {project.isProtected && (
-                  <Lock
-                    weight="fill"
-                    size={11}
-                    aria-label="Password protected"
-                    className="text-tertiary"
-                  />
-                )}
-              </div>
-              {project.description && (
-                <p className="text-[12px] leading-snug text-muted">
-                  {project.description}
-                </p>
-              )}
-            </div>
+            {open && (
+              <motion.div
+                id={`case-study-${project.slug}`}
+                role="tooltip"
+                className="double-stroke pointer-events-auto fixed z-[100] w-[180px] origin-top-left rounded-[6px] bg-content p-2"
+                style={{
+                  left: x,
+                  top: y,
+                  translateX: TOOLTIP_OFFSET_X,
+                  translateY: TOOLTIP_OFFSET_Y,
+                }}
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+                onMouseEnter={clearTimers}
+                onMouseLeave={requestClose}
+                key="case-study-tooltip"
+              >
+                <div className="relative z-[1] mb-2 flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1">
+                    <h4 className="text-[11.5px] font-medium leading-tight text-fg">
+                      {project.title}
+                    </h4>
+                    {project.isProtected && (
+                      <Lock
+                        weight="fill"
+                        size={9}
+                        aria-label="Password protected"
+                        className="text-tertiary"
+                      />
+                    )}
+                  </div>
+                  {project.description && (
+                    <p className="line-clamp-2 text-[10.5px] leading-snug text-muted">
+                      {project.description}
+                    </p>
+                  )}
+                </div>
 
-            <div className="relative z-[1] flex items-center gap-1.5">
-              <Link
-                href={caseStudyHref}
-                className="inline-flex items-center gap-1 rounded-[5px] bg-fg px-2.5 py-1.5 text-[11.5px] font-medium text-content transition-opacity hover:opacity-90"
-              >
-                <span>View case study</span>
-                <ArrowUpRight weight="bold" size={10} aria-hidden />
-              </Link>
-              <a
-                href={href}
-                target={external ? "_blank" : undefined}
-                rel={external ? "noopener noreferrer" : undefined}
-                className="inline-flex items-center gap-1 rounded-[5px] bg-hover px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:bg-border hover:text-fg"
-              >
-                <span>Open link</span>
-                <ArrowUpRight weight="bold" size={10} aria-hidden />
-              </a>
-            </div>
+                <div className="relative z-[1] flex items-center gap-1">
+                  <Link
+                    href={caseStudyHref}
+                    className="inline-flex items-center gap-0.5 rounded-[4px] bg-fg px-1.5 py-1 text-[10px] font-medium text-content transition-opacity hover:opacity-90"
+                  >
+                    <span>Case study</span>
+                    <ArrowUpRight weight="bold" size={9} aria-hidden />
+                  </Link>
+                  <a
+                    href={href}
+                    target={external ? "_blank" : undefined}
+                    rel={external ? "noopener noreferrer" : undefined}
+                    className="inline-flex items-center gap-0.5 rounded-[4px] bg-hover px-1.5 py-1 text-[10px] text-muted transition-colors hover:bg-border hover:text-fg"
+                  >
+                    <span>Open link</span>
+                    <ArrowUpRight weight="bold" size={9} aria-hidden />
+                  </a>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>,

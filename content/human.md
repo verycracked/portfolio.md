@@ -32,7 +32,7 @@ ai-powered procedural architecture generator — (([archie](https://github.com/v
 
 {{more of me}}
 
-(([portfolio](/portfolio.md)))
+(([portfolio](#portfolio)))
 (([cv](https://pub-4dad6c6f13224749b538f8b529c19047.r2.dev/cv/cdLocNJyt_zIvYWU.pdf)))
 (([x](https://twitter.com/verycracked)))
 (([github](https://github.com/verycracked)))

@@ -78,7 +78,7 @@ export default async function ProjectDetail({
     <main className="mx-auto max-w-3xl px-8 py-12">
       <div className="animate-fade-in flex items-center justify-between">
         <Link
-          href="/portfolio.md"
+          href="/portfolio"
           className="text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
         >
           ← Back
