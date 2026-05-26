@@ -331,3 +331,24 @@ a, button, input, textarea, select {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Reorder gesture polish ─────────────────────────────────────────────
+   While any card in `.reorder-grid` is grabbed, siblings dim and shrink
+   so the focused card lifts cleanly off the page. The drag layer itself
+   (via motion.whileDrag) applies the scale/rotate/shadow up top.
+   ──────────────────────────────────────────────────────────────────── */
+.reorder-grid[data-reordering] .reorder-card:not([data-dragging]) {
+  opacity: 0.45;
+  filter: saturate(0.85);
+  transform: scale(0.985);
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reorder-grid .reorder-card[data-dragging] {
+  /* The card under the cursor; motion handles the lift transform.
+     Bumped contrast helps the lifted card read against the dimmed grid. */
+  filter: saturate(1.1);
+}

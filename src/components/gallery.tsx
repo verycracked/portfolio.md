@@ -61,6 +61,7 @@ export function Gallery({
 }) {
   const editable = owner && !previewing;
   const [projects, setProjects] = useState(initial);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -129,7 +130,8 @@ export function Gallery({
       axis="y"
       values={projects}
       onReorder={handleReorder}
-      className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:auto-rows-[260px]"
+      data-reordering={draggingId ? "1" : undefined}
+      className="reorder-grid grid grid-cols-1 gap-6 sm:grid-cols-2 sm:auto-rows-[260px]"
       layoutScroll
     >
       {projects.map((p, i) => (
@@ -137,16 +139,25 @@ export function Gallery({
           key={p.id}
           value={p}
           as="div"
-          className={`animate-fade-rise touch-none ${spanClass(p.colSpan, p.rowSpan)}`}
+          data-dragging={draggingId === p.id ? "1" : undefined}
+          className={`animate-fade-rise reorder-card touch-none cursor-grab active:cursor-grabbing ${spanClass(p.colSpan, p.rowSpan)}`}
           style={{ ["--reveal-delay" as string]: `${200 + i * 60}ms` }}
-          whileDrag={{ scale: 1.02, zIndex: 30 }}
+          onDragStart={() => setDraggingId(p.id)}
+          onDragEnd={() => setDraggingId(null)}
+          whileDrag={{
+            scale: 1.04,
+            rotate: -1.2,
+            zIndex: 30,
+            boxShadow: "0 24px 56px -16px rgb(0 0 0 / 0.55)",
+          }}
+          transition={{ type: "spring", stiffness: 520, damping: 38 }}
         >
           <Card project={p} owner />
         </Reorder.Item>
       ))}
       <div
         key="__new-project"
-        className="animate-fade-rise"
+        className="animate-fade-rise reorder-card"
         style={{
           ["--reveal-delay" as string]: `${200 + projects.length * 60}ms`,
         }}
