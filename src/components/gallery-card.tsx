@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   ArrowUpRight,
+  CornersOut,
   DotsSixVertical,
   Image as ImageIcon,
   Lock,
@@ -50,21 +52,36 @@ export function GalleryCard({ project, spanClass, revealDelayMs }: CommonProps) 
   );
 }
 
-type OwnerProps = CommonProps & { onDelete: () => void };
+type OwnerProps = CommonProps & {
+  onDelete: () => void;
+  /** Live size update while the user is dragging the resize handle. */
+  onResize: (colSpan: number, rowSpan: number) => void;
+  /** Persist the current size to the server (called on pointer release). */
+  onResizeCommit: () => void;
+};
 
 /**
  * Owner card — wraps the visual card in a dnd-kit `useSortable` and adds
- * hover affordances (drag chip, delete button). The sortable node *is* the
- * grid cell so dnd-kit's per-card transform reorders the visual layout,
- * not an inner wrapper. Must be rendered inside a `<SortableContext>`.
+ * hover affordances (drag chip, delete button, resize handle). The
+ * sortable node *is* the grid cell so dnd-kit's per-card transform
+ * reorders the visual layout, not an inner wrapper. Must be rendered
+ * inside a `<SortableContext>`.
  */
 export function SortableGalleryCard({
   project,
   spanClass,
   revealDelayMs,
   onDelete,
+  onResize,
+  onResizeCommit,
 }: OwnerProps) {
   const sortable = useSortable({ id: project.id });
+  const cellRef = useRef<HTMLDivElement | null>(null);
+
+  const setRefs = (node: HTMLDivElement | null) => {
+    cellRef.current = node;
+    sortable.setNodeRef(node);
+  };
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(sortable.transform),
@@ -75,17 +92,69 @@ export function SortableGalleryCard({
     (style as Record<string, string>)["--reveal-delay"] = `${revealDelayMs}ms`;
   }
 
+  // Pointer-drag resize. Snaps to 1x1 / 2x1 / 1x2 / 2x2 based on how far
+  // the pointer has moved relative to a single cell's size. Live updates
+  // the span via onResize; saves once on pointerup via onResizeCommit.
+  const startResize = (e: React.PointerEvent) => {
+    if (!cellRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+
+    const node = cellRef.current;
+    const rect = node.getBoundingClientRect();
+    const startCol = project.colSpan;
+    const startRow = project.rowSpan;
+    // Width/height of a single grid cell, inferred from the current rect.
+    const cellW = rect.width / startCol;
+    const cellH = rect.height / startRow;
+    // Anchor at the bottom-right corner of the tile at gesture start.
+    const anchorX = rect.right;
+    const anchorY = rect.bottom;
+
+    const handleMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - anchorX;
+      const dy = ev.clientY - anchorY;
+      // 40% threshold to flip — gives a nice "snap" feel without being
+      // too sticky on the way back.
+      const nextCol =
+        startCol === 1 && dx > cellW * 0.4
+          ? 2
+          : startCol === 2 && dx < -cellW * 0.4
+            ? 1
+            : startCol;
+      const nextRow =
+        startRow === 1 && dy > cellH * 0.4
+          ? 2
+          : startRow === 2 && dy < -cellH * 0.4
+            ? 1
+            : startRow;
+      if (nextCol !== project.colSpan || nextRow !== project.rowSpan) {
+        onResize(nextCol, nextRow);
+      }
+    };
+
+    const handleUp = () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      onResizeCommit();
+    };
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+  };
+
   return (
     <div
-      ref={sortable.setNodeRef}
+      ref={setRefs}
       style={style}
       data-dragging={sortable.isDragging ? "1" : undefined}
-      className={`reorder-card relative ${spanClass}`}
+      className={`reorder-card group relative ${spanClass}`}
     >
       <Link
         href={`/projects/${project.slug}`}
         aria-label={project.title}
-        className="group block h-full cursor-grab select-none active:cursor-grabbing"
+        className="block h-full cursor-grab select-none active:cursor-grabbing"
         {...sortable.attributes}
         {...sortable.listeners}
         draggable={false}
@@ -124,6 +193,19 @@ export function SortableGalleryCard({
         className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-[4px] border border-border-soft bg-content/85 text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
       >
         <X size={11} weight="bold" aria-hidden />
+      </button>
+      <button
+        type="button"
+        aria-label={`Resize ${project.title}`}
+        onPointerDown={startResize}
+        onClick={(e) => {
+          // Don't let a stray click bubble into the Link nav.
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        className="absolute bottom-3 right-3 inline-flex h-7 w-7 cursor-nwse-resize items-center justify-center rounded-[4px] border border-border-soft bg-content/85 text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
+      >
+        <CornersOut size={13} weight="bold" aria-hidden />
       </button>
     </div>
   );

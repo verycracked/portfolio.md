@@ -88,6 +88,42 @@ export function Gallery({
     persistOrder(next);
   };
 
+  // Live resize: update the local state so the grid reflows immediately.
+  // Persisted on pointer release via handleResizeCommit, debounced to
+  // absorb rapid back-and-forth and read from a ref so the callback always
+  // sees the latest size even if pointerup beats the next React render.
+  const projectsRef = useRef(projects);
+  useEffect(() => {
+    projectsRef.current = projects;
+  }, [projects]);
+  const resizeSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (resizeSaveTimer.current) clearTimeout(resizeSaveTimer.current);
+    },
+    []
+  );
+  const handleResize = (id: string, colSpan: number, rowSpan: number) => {
+    setProjects((cur) =>
+      cur.map((p) => (p.id === id ? { ...p, colSpan, rowSpan } : p))
+    );
+  };
+  const handleResizeCommit = (id: string) => {
+    if (resizeSaveTimer.current) clearTimeout(resizeSaveTimer.current);
+    resizeSaveTimer.current = setTimeout(() => {
+      const project = projectsRef.current.find((p) => p.id === id);
+      if (!project) return;
+      void fetch(`/api/projects/${id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          colSpan: project.colSpan,
+          rowSpan: project.rowSpan,
+        }),
+      });
+    }, REORDER_SAVE_DEBOUNCE_MS);
+  };
+
   const handleDelete = async (id: string) => {
     const snapshot = projects;
     setProjects((cur) => cur.filter((p) => p.id !== id));
@@ -148,6 +184,8 @@ export function Gallery({
               key={p.id}
               project={p}
               onDelete={() => void handleDelete(p.id)}
+              onResize={(c, r) => handleResize(p.id, c, r)}
+              onResizeCommit={() => handleResizeCommit(p.id)}
               spanClass={`animate-fade-rise ${spanClass(p.colSpan, p.rowSpan)}`}
               revealDelayMs={200 + i * 60}
             />
