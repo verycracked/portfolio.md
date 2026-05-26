@@ -114,16 +114,12 @@ export function Gallery({
     return (
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:auto-rows-[260px]">
         {projects.map((p, i) => (
-          <div
+          <GalleryCard
             key={p.id}
-            className="animate-fade-rise"
-            style={{ ["--reveal-delay" as string]: `${200 + i * 60}ms` }}
-          >
-            <GalleryCard
-              project={p}
-              spanClass={spanClass(p.colSpan, p.rowSpan)}
-            />
-          </div>
+            project={p}
+            spanClass={`animate-fade-rise ${spanClass(p.colSpan, p.rowSpan)}`}
+            revealDelayMs={200 + i * 60}
+          />
         ))}
       </div>
     );
@@ -148,17 +144,13 @@ export function Gallery({
           className="reorder-grid grid grid-cols-1 gap-6 sm:grid-cols-2 sm:auto-rows-[260px]"
         >
           {projects.map((p, i) => (
-            <div
+            <SortableGalleryCard
               key={p.id}
-              className="animate-fade-rise"
-              style={{ ["--reveal-delay" as string]: `${200 + i * 60}ms` }}
-            >
-              <SortableGalleryCard
-                project={p}
-                onDelete={() => void handleDelete(p.id)}
-                spanClass={spanClass(p.colSpan, p.rowSpan)}
-              />
-            </div>
+              project={p}
+              onDelete={() => void handleDelete(p.id)}
+              spanClass={`animate-fade-rise ${spanClass(p.colSpan, p.rowSpan)}`}
+              revealDelayMs={200 + i * 60}
+            />
           ))}
           <div
             className="animate-fade-rise"

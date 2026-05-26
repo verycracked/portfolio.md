@@ -15,7 +15,10 @@ import type { GalleryProject } from "@/components/gallery-types";
 
 type CommonProps = {
   project: GalleryProject;
+  /** Classes applied to the outer grid cell — usually col/row-span. */
   spanClass: string;
+  /** Optional fade-in delay (ms) to stagger reveal animations. */
+  revealDelayMs?: number;
 };
 
 /**
@@ -23,9 +26,13 @@ type CommonProps = {
  * delete. Used both directly on /(site) for visitors and inside the
  * dnd-kit DragOverlay for the lifted "ghost" while dragging.
  */
-export function GalleryCard({ project, spanClass }: CommonProps) {
+export function GalleryCard({ project, spanClass, revealDelayMs }: CommonProps) {
+  const style: React.CSSProperties | undefined =
+    revealDelayMs !== undefined
+      ? ({ ["--reveal-delay" as string]: `${revealDelayMs}ms` } as React.CSSProperties)
+      : undefined;
   return (
-    <div className={`relative ${spanClass}`}>
+    <div className={`relative ${spanClass}`} style={style}>
       <Link
         href={`/projects/${project.slug}`}
         aria-label={project.title}
@@ -47,10 +54,16 @@ type OwnerProps = CommonProps & { onDelete: () => void };
 
 /**
  * Owner card — wraps the visual card in a dnd-kit `useSortable` and adds
- * hover affordances (drag chip, delete button). Must be rendered inside a
- * `<SortableContext>`.
+ * hover affordances (drag chip, delete button). The sortable node *is* the
+ * grid cell so dnd-kit's per-card transform reorders the visual layout,
+ * not an inner wrapper. Must be rendered inside a `<SortableContext>`.
  */
-export function SortableGalleryCard({ project, spanClass, onDelete }: OwnerProps) {
+export function SortableGalleryCard({
+  project,
+  spanClass,
+  revealDelayMs,
+  onDelete,
+}: OwnerProps) {
   const sortable = useSortable({ id: project.id });
 
   const style: React.CSSProperties = {
@@ -58,6 +71,9 @@ export function SortableGalleryCard({ project, spanClass, onDelete }: OwnerProps
     transition: sortable.transition,
     zIndex: sortable.isDragging ? 40 : undefined,
   };
+  if (revealDelayMs !== undefined) {
+    (style as Record<string, string>)["--reveal-delay"] = `${revealDelayMs}ms`;
+  }
 
   return (
     <div
@@ -158,8 +174,14 @@ function HeroFrame({
           />
         )
       ) : (
-        <div className="flex h-full items-center justify-center text-tertiary">
-          <ImageIcon size={28} weight="fill" aria-label="No image" />
+        // Empty hero — a soft gradient + the project title so the slot
+        // still reads as a real card during drag and at rest, rather than
+        // looking like a broken placeholder.
+        <div className="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-hover via-content to-hover px-4 text-center text-muted">
+          <ImageIcon size={20} weight="bold" aria-hidden />
+          <p className="line-clamp-2 text-[13px] font-medium text-fg">
+            {title || "Untitled"}
+          </p>
         </div>
       )}
       {isProtected && (
