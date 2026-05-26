@@ -31,6 +31,10 @@ model Project {
   // fallback for the public page until everything is migrated.
   body          String          @default("")
   heroImageUrl  String?
+  // Optional still extracted from the hero (when it's a video) at upload
+  // time. Used as the <video poster> attribute and as the standalone image
+  // on touch devices where we don't autoplay.
+  posterUrl     String?
   sourceUrl     String?
   // HMAC hash of the visitor password. null = public. owner always has access.
   passwordHash  String?

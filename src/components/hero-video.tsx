@@ -4,32 +4,32 @@ import { useEffect, useRef, useState } from "react";
 
 type Props = {
   src: string;
+  posterUrl?: string | null;
   ariaLabel: string;
 };
 
 /**
- * Hero video: autoplays muted on desktop; on touch devices it shows just
- * the first frame (no overlay, no play button — reads like a static image)
- * and tapping toggles playback silently.
+ * Hero video with mobile-friendly behavior:
  *
- * iOS Safari quirk: a paused <video> renders nothing until it's been
- * played at least once, even with preload="auto". To paint the first frame
- * without leaving the video running, we briefly `play()` then immediately
- * `pause()` after onLoadedData. The result is a still that looks like a
- * regular image.
+ *  • Desktop (hover-capable pointer): a muted-autoplay-loop <video>. The
+ *    `poster` attribute paints the first frame while the data is still
+ *    fetching, so the tile never reads as blank.
+ *  • Touch devices (phones, tablets): renders a plain <img src={poster}>
+ *    by default — no autoplay, no decoded video, no chrome. Reads exactly
+ *    like a static image. Tapping swaps to a <video> and starts playback
+ *    silently. Tapping again pauses.
  *
- * Touch detection uses `(hover: none) and (pointer: coarse)` — the same
- * media query browsers use to distinguish coarse-pointer phones / tablets
- * from precise-pointer laptops / desktops.
+ * If `posterUrl` is null (legacy uploads pre-poster extraction), we fall
+ * back to rendering the <video> directly on every device. Autoplay still
+ * works on modern mobile browsers for muted + playsInline videos.
  */
-export function HeroVideo({ src, ariaLabel }: Props) {
+export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  // null until we've measured matchMedia — avoids SSR/CSR drift on the
-  // `autoPlay` attribute.
+  // null until matchMedia runs — avoids SSR/CSR drift on the autoplay attr.
   const [isTouch, setIsTouch] = useState<boolean | null>(null);
-  // After the user explicitly taps to play, we leave playback running so a
-  // future onLoadedData (e.g. after a re-render) doesn't immediately pause.
-  const userPlayingRef = useRef(false);
+  // On touch devices: stay on the poster <img> until the user explicitly
+  // taps, then mount the <video> and play.
+  const [activated, setActivated] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(hover: none) and (pointer: coarse)");
@@ -39,31 +39,49 @@ export function HeroVideo({ src, ariaLabel }: Props) {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
+  // Touch + we have a poster: render the still by default, mount the
+  // <video> only after the user taps.
+  if (isTouch && posterUrl && !activated) {
+    return (
+      <button
+        type="button"
+        aria-label={`Play ${ariaLabel}`}
+        onClick={() => setActivated(true)}
+        className="block h-full w-full"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={posterUrl}
+          alt={ariaLabel}
+          className="h-full w-full object-cover"
+          draggable={false}
+        />
+      </button>
+    );
+  }
+
+  // Once activated on touch, OR on desktop, OR when there's no poster to
+  // fall back to: render the actual <video>.
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
     if (v.paused) {
-      userPlayingRef.current = true;
       v.muted = true;
       const p = v.play();
       if (p && typeof p.catch === "function") p.catch(() => undefined);
     } else {
-      userPlayingRef.current = false;
       v.pause();
     }
   };
 
-  // iOS-friendly first-frame paint: muted play, then pause once we have at
-  // least one decoded frame. Skipped on desktop (autoplay handles it) and
-  // when the user has explicitly tapped to keep playing.
-  const paintFirstFrame = (v: HTMLVideoElement) => {
-    v.muted = true;
-    const p = v.play();
-    if (!p || typeof p.then !== "function") return;
-    p.then(() => {
-      if (!userPlayingRef.current) v.pause();
-    }).catch(() => undefined);
-  };
+  // Autoplay rule: desktop yes; touch with no poster (legacy) yes; touch
+  // with poster + activated yes (the user just tapped). `isTouch` is null
+  // before matchMedia runs — treat that window as "not yet touch" so the
+  // SSR render matches.
+  const shouldAutoplay: boolean =
+    isTouch === false ||
+    (isTouch === true && !posterUrl) ||
+    (isTouch === true && activated);
 
   return (
     <video
@@ -72,29 +90,21 @@ export function HeroVideo({ src, ariaLabel }: Props) {
         if (el) el.muted = true;
       }}
       src={src}
+      poster={posterUrl ?? undefined}
       aria-label={ariaLabel}
       muted
       loop
       playsInline
-      // Autoplay only on non-touch devices. Touch devices get a "paint the
-      // first frame then pause" dance in onLoadedData below.
-      autoPlay={isTouch === false}
-      preload="auto"
+      autoPlay={shouldAutoplay}
+      preload={shouldAutoplay ? "auto" : "metadata"}
       controls={false}
       onLoadedData={(e) => {
+        if (!shouldAutoplay) return;
         const v = e.currentTarget;
         v.muted = true;
-        if (isTouch === false) {
-          // Desktop: belt-and-braces explicit play (autoplay attribute
-          // sometimes loses the race with React's muted-prop reconciliation).
-          const p = v.play();
-          if (p && typeof p.catch === "function") p.catch(() => undefined);
-        } else if (isTouch === true) {
-          paintFirstFrame(v);
-        }
+        const p = v.play();
+        if (p && typeof p.catch === "function") p.catch(() => undefined);
       }}
-      // Tap toggles on touch. Desktop ignores click so a stray tap doesn't
-      // pause the always-running ambient hero.
       onClick={isTouch ? togglePlay : undefined}
       className="h-full w-full object-cover"
     />

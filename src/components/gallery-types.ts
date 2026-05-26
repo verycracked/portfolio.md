@@ -4,6 +4,9 @@ export type GalleryProject = {
   title: string;
   description: string;
   heroImageUrl: string | null;
+  /** First-frame still for videos. Null for image heroes and for legacy
+   *  video uploads that predate poster extraction. */
+  posterUrl: string | null;
   isProtected: boolean;
   /** 1–4 — number of grid columns this card occupies horizontally. */
   colSpan: number;

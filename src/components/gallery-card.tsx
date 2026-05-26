@@ -33,6 +33,7 @@ export function GalleryCard({ project, spanClass, revealDelayMs }: CommonProps) 
       <CardShell>
         <HeroFrame
           url={project.heroImageUrl}
+          posterUrl={project.posterUrl}
           title={project.title}
           protected={project.isProtected}
         />
@@ -154,6 +155,7 @@ export function SortableGalleryCard({
       <CardShell>
         <HeroFrame
           url={project.heroImageUrl}
+          posterUrl={project.posterUrl}
           title={project.title}
           protected={project.isProtected}
         />
@@ -206,10 +208,12 @@ function CardShell({ children }: { children: React.ReactNode }) {
 
 function HeroFrame({
   url,
+  posterUrl,
   title,
   protected: isProtected,
 }: {
   url: string | null;
+  posterUrl?: string | null;
   title: string;
   protected?: boolean;
 }) {
@@ -219,13 +223,23 @@ function HeroFrame({
         isVideoUrl(url) ? (
           // HeroVideo autoplays on desktop, stays paused with a tap-to-play
           // affordance on touch devices (saves data + keeps mobile calm).
-          <HeroVideo src={url} ariaLabel={title} />
+          <HeroVideo
+            src={url}
+            posterUrl={posterUrl ?? null}
+            ariaLabel={title}
+          />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={url}
             alt={title}
             loading="lazy"
+            // When the browser pre-decodes a cached image, onLoad fires
+            // before React attaches the listener. Probe `.complete` in the
+            // ref callback so cached images don't stay stuck at opacity 0.
+            ref={(el) => {
+              if (el?.complete) el.classList.add("is-loaded");
+            }}
             onLoad={(e) => e.currentTarget.classList.add("is-loaded")}
             className="img-fade h-full w-full object-cover"
           />

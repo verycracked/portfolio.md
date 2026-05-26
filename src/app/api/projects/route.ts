@@ -34,6 +34,9 @@ export async function POST(req: Request) {
     description?: string;
     sourceUrl?: string;
     heroImageUrl?: string;
+    /** Optional poster still — required for videos to display anything on
+     *  iOS Safari without autoplay; auto-extracted client-side at upload. */
+    posterUrl?: string;
     /** Section to drop the new tile into. Falls back to the first group
      *  (creating one if none exist) so the API is forgiving for legacy
      *  callers like the snapshot extension. */
@@ -80,6 +83,7 @@ export async function POST(req: Request) {
       description: body.description ?? "",
       sourceUrl: body.sourceUrl,
       heroImageUrl: body.heroImageUrl,
+      posterUrl: body.posterUrl,
       order,
       groupId,
       surfaces: {

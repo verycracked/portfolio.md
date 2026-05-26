@@ -40,6 +40,7 @@ export default async function Home({
             title: true,
             description: true,
             heroImageUrl: true,
+            posterUrl: true,
             passwordHash: true,
             colSpan: true,
             rowSpan: true,
