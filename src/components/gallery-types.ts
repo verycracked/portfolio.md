@@ -11,6 +11,14 @@ export type GalleryProject = {
   rowSpan: number;
 };
 
+export type GalleryGroup = {
+  id: string;
+  slug: string;
+  name: string;
+  order: number;
+  projects: GalleryProject[];
+};
+
 // Static class maps so Tailwind's JIT can see the literal class names.
 // Dynamic interpolation (`col-span-${n}`) wouldn't be picked up.
 const COL_SPAN_CLASS: Record<number, string> = {

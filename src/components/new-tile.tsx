@@ -5,21 +5,21 @@ import { useRouter } from "next/navigation";
 import { Plus, UploadSimple } from "@phosphor-icons/react/dist/ssr";
 import { MEDIA_ACCEPT } from "@/lib/media";
 
+type Props = {
+  /** Group ID the new tile should land in. Required so uploads scope to
+   *  the section that surfaced this tile. */
+  groupId: string;
+};
+
 /**
- * Owner-only "add" tile that sits in the gallery grid. Three ways to use:
- *
+ * Owner-only "add" tile that sits at the end of each section's grid.
  *  • Click "Upload" — opens the file picker, every chosen file becomes a
- *    new project tile with that file as its hero.
- *  • Drop a file directly onto this tile — same as above, with a visible
- *    highlight while a drag is over the tile.
- *  • Click "New" — creates an empty Untitled project and routes to its
- *    editor for full setup (title, description, surfaces).
- *
- * The drop target also accepts the global drag overlay's gesture so users
- * who happen to release the mouse over this tile get the same outcome as
- * dropping anywhere else on the page.
+ *    new tile in this section with the file as its hero.
+ *  • Drop a file onto this tile — same outcome with a visible highlight
+ *    while a drag is over it.
+ *  • Click "New" — creates an empty Untitled tile and routes to its editor.
  */
-export function NewTile() {
+export function NewTile({ groupId }: Props) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -41,7 +41,11 @@ export function NewTile() {
         const proj = await fetch("/api/projects", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ title: "Untitled", heroImageUrl: url }),
+          body: JSON.stringify({
+            title: "Untitled",
+            heroImageUrl: url,
+            groupId,
+          }),
         });
         if (!proj.ok) {
           const data = (await proj.json().catch(() => ({}))) as { error?: string };
@@ -61,7 +65,7 @@ export function NewTile() {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title: "Untitled project" }),
+        body: JSON.stringify({ title: "Untitled project", groupId }),
       });
       if (!res.ok) return;
       const project = (await res.json()) as { id: string };

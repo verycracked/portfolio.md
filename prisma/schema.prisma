@@ -7,6 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// A named group of project tiles on the homepage gallery, e.g. "CodeRabbit",
+// "Trustlists". Every project belongs to exactly one group; we always have at
+// least the auto-seeded "Untitled" group available as a default home for
+// brand-new uploads.
+model Group {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projects  Project[]
+}
+
 model Project {
   id            String          @id @default(cuid())
   slug          String          @unique
@@ -20,6 +34,7 @@ model Project {
   sourceUrl     String?
   // HMAC hash of the visitor password. null = public. owner always has access.
   passwordHash  String?
+  // Order *within* the project's group on the homepage gallery.
   order         Int             @default(0)
   // Bento-grid sizing on the portfolio page. colSpan is the number of
   // 4-column grid cells the card occupies horizontally (1–4); rowSpan is
@@ -29,9 +44,16 @@ model Project {
   rowSpan       Int             @default(1)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  // Section this tile lives in. Nullable on the column so the backfill can
+  // run before any group exists; in practice every row gets pointed at the
+  // default group during migration and the API never accepts null.
+  groupId       String?
+  group         Group?          @relation(fields: [groupId], references: [id])
   images        ProjectImage[]
   assets        Asset[]
   surfaces      Surface[]
+
+  @@index([groupId])
 }
 
 // A "product surface" is a tab inside a project: e.g. Web, Mobile, Marketing.

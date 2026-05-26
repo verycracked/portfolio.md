@@ -62,7 +62,10 @@ export function SortableGalleryCard({
   onResize,
   onResizeCommit,
 }: OwnerProps) {
-  const sortable = useSortable({ id: project.id });
+  const sortable = useSortable({
+    id: project.id,
+    data: { kind: "tile" },
+  });
   const cellRef = useRef<HTMLDivElement | null>(null);
 
   const setRefs = (node: HTMLDivElement | null) => {

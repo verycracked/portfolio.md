@@ -7,20 +7,21 @@ import { NomoEditor } from "@/components/nomo-editor";
 import { FadeIn } from "@/components/fade-in";
 import { Gallery } from "@/components/gallery";
 import { HomeDropzone } from "@/components/home-dropzone";
+import type { GalleryGroup } from "@/components/gallery-types";
 import type { ProjectSummary } from "@/lib/case-study";
 
 export const metadata: Metadata = {
   title: { absolute: "vc billingsley — design engineer" },
 };
 
-// Single unified page: markdown body (about content) on top, project
+// Single unified page: markdown body (about content) on top, grouped project
 // gallery below. Owner can edit the markdown via `?edit=1`.
 export default async function Home({
   searchParams,
 }: {
   searchParams: Promise<{ preview?: string; edit?: string }>;
 }) {
-  const [{ preview, edit }, doc, settings, owner, projectRows] = await Promise.all([
+  const [{ preview, edit }, doc, settings, owner, groupRows] = await Promise.all([
     searchParams,
     readNomoDocument("human"),
     prisma.settings.findUnique({
@@ -28,21 +29,26 @@ export default async function Home({
       select: { avatarUrl: true },
     }),
     isAuthed(),
-    prisma.project.findMany({
+    prisma.group.findMany({
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        description: true,
-        heroImageUrl: true,
-        passwordHash: true,
-        colSpan: true,
-        rowSpan: true,
-        surfaces: {
+      include: {
+        projects: {
           orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-          take: 1,
-          select: { slug: true, heroImageUrl: true },
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            description: true,
+            heroImageUrl: true,
+            passwordHash: true,
+            colSpan: true,
+            rowSpan: true,
+            surfaces: {
+              orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+              take: 1,
+              select: { slug: true, heroImageUrl: true },
+            },
+          },
         },
       },
     }),
@@ -50,10 +56,13 @@ export default async function Home({
   const editing = owner && edit === "1";
   const previewing = preview === "1";
 
+  const allProjects = groupRows.flatMap((g) => g.projects);
+
   // Case-study map (slug → summary) for the markdown renderer's hover
-  // tooltips on pills whose slug matches a project.
+  // tooltips on pills whose slug matches a project. Built from the flat
+  // list across every section.
   const caseStudies = new Map<string, ProjectSummary>(
-    projectRows.map((p) => [
+    allProjects.map((p) => [
       p.slug,
       {
         slug: p.slug,
@@ -66,15 +75,21 @@ export default async function Home({
     ])
   );
 
-  // Gallery cards prefer the active surface's hero, fall back to the
-  // legacy project-level hero.
-  const galleryProjects = projectRows.map(
-    ({ passwordHash, surfaces, heroImageUrl, ...rest }) => ({
-      ...rest,
-      heroImageUrl: surfaces[0]?.heroImageUrl ?? heroImageUrl,
-      isProtected: !!passwordHash,
-    })
-  );
+  // Shape into the GalleryGroup type the client expects. Each tile prefers
+  // the active surface's hero, falling back to the legacy project-level one.
+  const galleryGroups: GalleryGroup[] = groupRows.map((g) => ({
+    id: g.id,
+    slug: g.slug,
+    name: g.name,
+    order: g.order,
+    projects: g.projects.map(
+      ({ passwordHash, surfaces, heroImageUrl, ...rest }) => ({
+        ...rest,
+        heroImageUrl: surfaces[0]?.heroImageUrl ?? heroImageUrl,
+        isProtected: !!passwordHash,
+      })
+    ),
+  }));
 
   if (editing) {
     return (
@@ -96,7 +111,7 @@ export default async function Home({
       />
       <section id="portfolio" className="mt-16 scroll-mt-8">
         <Gallery
-          initial={galleryProjects}
+          initial={galleryGroups}
           owner={owner}
           previewing={previewing}
         />
