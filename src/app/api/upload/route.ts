@@ -91,20 +91,46 @@ export async function POST(req: Request) {
     : `${nanoid(16)}.${ext}`;
   const body = new Uint8Array(await file.arrayBuffer());
 
-  await r2.send(
-    new PutObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: key,
-      Body: body,
-      ContentType: file.type,
-      CacheControl: "public, max-age=31536000, immutable",
-    })
-  );
+  try {
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: key,
+        Body: body,
+        ContentType: file.type,
+        CacheControl: "public, max-age=31536000, immutable",
+      })
+    );
+  } catch (err) {
+    // Surface the cause so we can read it in Vercel logs instead of a
+    // generic 500. R2 misconfiguration (bad bucket / key / region) is the
+    // most common failure here.
+    console.error("R2 upload failed", {
+      key,
+      bucket: R2_BUCKET,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return NextResponse.json(
+      {
+        error: `R2 upload failed: ${err instanceof Error ? err.message : "unknown"}`,
+      },
+      { status: 502 }
+    );
+  }
 
   const url = `${R2_PUBLIC_URL.replace(/\/$/, "")}/${key}`;
-  await prisma.asset.create({
-    data: { url, key, mime: file.type, size: file.size, projectId },
-  });
+  try {
+    await prisma.asset.create({
+      data: { url, key, mime: file.type, size: file.size, projectId },
+    });
+  } catch (err) {
+    console.error("asset insert failed", {
+      key,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    // The file is in R2 already; return the URL so the client can keep
+    // moving. The orphan asset row will just be missing.
+  }
 
   return NextResponse.json({ url, project: projectSlug });
 }
