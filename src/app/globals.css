@@ -333,22 +333,24 @@ a, button, input, textarea, select {
 }
 
 /* ── Reorder gesture polish ─────────────────────────────────────────────
-   While any card in `.reorder-grid` is grabbed, siblings dim and shrink
-   so the focused card lifts cleanly off the page. The drag layer itself
-   (via motion.whileDrag) applies the scale/rotate/shadow up top.
+   While any card in `.reorder-grid` is grabbed, siblings dim slightly so
+   the lifted card reads clearly. The lifted card itself is rendered by
+   dnd-kit's <DragOverlay>; the original slot stays in place at lowered
+   opacity so the gap between siblings doesn't collapse mid-drag.
    ──────────────────────────────────────────────────────────────────── */
-.reorder-grid[data-reordering] .reorder-card:not([data-dragging]) {
-  opacity: 0.45;
-  filter: saturate(0.85);
-  transform: scale(0.985);
+.reorder-grid[data-reordering] .reorder-card {
   transition:
     opacity 180ms ease,
-    filter 180ms ease,
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    filter 180ms ease;
+}
+
+.reorder-grid[data-reordering] .reorder-card:not([data-dragging]) {
+  opacity: 0.6;
+  filter: saturate(0.9);
 }
 
 .reorder-grid .reorder-card[data-dragging] {
-  /* The card under the cursor; motion handles the lift transform.
-     Bumped contrast helps the lifted card read against the dimmed grid. */
-  filter: saturate(1.1);
+  /* Ghost of the moving card — keeps its footprint in the grid so the
+     surrounding cards don't snap together while a drag is in flight. */
+  opacity: 0.18;
 }
