@@ -7,6 +7,8 @@ import { NomoEditor } from "@/components/nomo-editor";
 import { FadeIn } from "@/components/fade-in";
 import { Gallery } from "@/components/gallery";
 import { HomeDropzone } from "@/components/home-dropzone";
+import { MediaReorderProvider } from "@/components/media-reorder";
+import { extractReorderableMediaUrls } from "@/lib/extract-media";
 import type { ProjectSummary } from "@/lib/case-study";
 
 export const metadata: Metadata = {
@@ -87,13 +89,22 @@ export default async function Home({
     );
   }
 
+  const reorderableMediaUrls = extractReorderableMediaUrls(doc.body);
+  const reorderEnabled = owner && !previewing;
+
   return (
     <FadeIn>
-      {owner && !previewing && <HomeDropzone slug="human" />}
-      <NomoMarkdown
-        body={doc.body}
-        context={{ avatarUrl: settings?.avatarUrl ?? null, caseStudies }}
-      />
+      {reorderEnabled && <HomeDropzone slug="human" />}
+      <MediaReorderProvider
+        slug="human"
+        initialUrls={reorderableMediaUrls}
+        enabled={reorderEnabled}
+      >
+        <NomoMarkdown
+          body={doc.body}
+          context={{ avatarUrl: settings?.avatarUrl ?? null, caseStudies }}
+        />
+      </MediaReorderProvider>
       <section id="portfolio" className="mt-16 scroll-mt-8">
         <Gallery
           initial={galleryProjects}
