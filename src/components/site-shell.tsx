@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 import { Avatar } from "@/components/avatar";
+import { OwnerToolbar } from "@/components/owner-toolbar";
 
 type Props = {
   avatarUrl: string | null;
@@ -14,9 +15,8 @@ type Props = {
  * Top-of-page chrome for the single unified site page.
  *
  * The circular avatar sits at the top, and the rest of the page content is
- * rendered as children. Owner-only edit affordances are no longer surfaced
- * here — direct routes (`/?edit=1`) still work for backstage tweaks, but the
- * default view is read-only.
+ * rendered as children. Owners see a small toolbar in the upper-right with
+ * a Preview/Exit-preview toggle and a Share button.
  */
 export function SiteShell({ avatarUrl, owner, children }: Props) {
   const searchParams = useSearchParams();
@@ -25,7 +25,9 @@ export function SiteShell({ avatarUrl, owner, children }: Props) {
   const editable = owner && !previewing && !editing;
 
   return (
-    <main className="mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
+    <main className="relative mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
+      {owner && <OwnerToolbar previewing={previewing} />}
+
       {(editable || avatarUrl) && (
         <div
           className="animate-fade-rise mb-10"

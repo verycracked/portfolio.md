@@ -1,0 +1,85 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Check, Eye, EyeSlash, Link as LinkIcon } from "@phosphor-icons/react/dist/ssr";
+
+type Props = {
+  /** True when the page is rendering the visitor-only view (?preview=1). */
+  previewing: boolean;
+};
+
+/**
+ * Owner-only top-right toolbar with two actions:
+ *
+ *  • Preview / Exit preview — toggles `?preview=1` on the current URL.
+ *    Preview mode renders the page exactly as visitors see it (no edit
+ *    chrome, drop zones, drag handles, etc.) without logging the owner out.
+ *  • Share link — copies the preview URL to the clipboard. The preview URL
+ *    is what visitors land on; sharing the bare URL would land them on the
+ *    owner view if they happen to be signed in.
+ *
+ * Renders nothing for visitors; gated on `owner` at the call site.
+ */
+export function OwnerToolbar({ previewing }: Props) {
+  const [copied, setCopied] = useState(false);
+
+  const copyShareLink = async () => {
+    if (typeof window === "undefined") return;
+    // Strip any existing `preview` param then add ours so the link is clean.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("edit");
+    url.searchParams.set("preview", "1");
+    // Stripping the search prefix from the toString isn't necessary; the
+    // URL helper handles it. But we use origin + pathname + ?preview=1 to
+    // keep the link tidy regardless of how the owner arrived here.
+    const shareUrl = `${url.origin}${url.pathname}?preview=1`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Fallback: select-into-prompt so the owner can still grab the URL
+      // when clipboard access is blocked.
+      window.prompt("Copy this preview link:", shareUrl);
+    }
+  };
+
+  return (
+    <div
+      className="animate-fade-in absolute right-5 top-5 z-20 flex items-center gap-1.5 text-[12px] md:right-[3.75rem] md:top-8"
+      style={{ ["--reveal-delay" as string]: "20ms" }}
+    >
+      <Link
+        href={previewing ? "/" : "/?preview=1"}
+        className="inline-flex items-center gap-1.5 rounded-[6px] border border-border-soft bg-content/80 px-2.5 py-1 text-muted backdrop-blur transition-colors hover:border-border hover:text-fg"
+        aria-label={previewing ? "Exit preview" : "Preview as visitor"}
+      >
+        {previewing ? (
+          <EyeSlash size={12} weight="bold" aria-hidden />
+        ) : (
+          <Eye size={12} weight="bold" aria-hidden />
+        )}
+        {previewing ? "Exit preview" : "Preview"}
+      </Link>
+      <button
+        type="button"
+        onClick={() => void copyShareLink()}
+        aria-label="Copy share link"
+        className="inline-flex items-center gap-1.5 rounded-[6px] border border-border-soft bg-content/80 px-2.5 py-1 text-muted backdrop-blur transition-colors hover:border-border hover:text-fg"
+      >
+        {copied ? (
+          <>
+            <Check size={12} weight="bold" aria-hidden />
+            Copied
+          </>
+        ) : (
+          <>
+            <LinkIcon size={12} weight="bold" aria-hidden />
+            Share
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
