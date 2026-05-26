@@ -16,11 +16,10 @@ vc billingsley — design engineer, san francisco
 
 {{work}}
 
-founder at stealth
-founder at [miso.](https://www.misodesign.co)
-founding product designer at [coderabbit](https://coderabbit.ai)
-founding product designer at [eudia](https://eudia.com)
-ux designer at [blue yonder](https://blueyonder.com)
+founding design engineer at [coderabbit](https://coderabbit.ai) — aug 2025 – present
+founding product designer at [eudia](https://eudia.com) — feb 2025 – aug 2025
+ux designer ii at [doddle](https://doddle.com) — apr 2023 – feb 2025
+ux designer i at [blue yonder](https://blueyonder.com) — jan 2021 – apr 2023
 
 {{contact}}
 
