@@ -43,7 +43,7 @@ export default function RootLayout({
               className="absolute left-6 top-6 z-10 inline-flex h-6 w-7 items-center justify-center"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/portfolio.svg" alt="" className="h-full w-full" />
+              <img src="/vc-logo.svg" alt="" className="h-full w-full" />
             </Link>
             <PageTransition>{children}</PageTransition>
           </div>

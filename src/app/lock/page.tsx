@@ -1,9 +1,18 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 export default function LockPage() {
+  // useSearchParams() must live under Suspense for Next 16's static export.
+  return (
+    <Suspense fallback={null}>
+      <LockForm />
+    </Suspense>
+  );
+}
+
+function LockForm() {
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") || "/";
