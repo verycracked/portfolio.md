@@ -216,6 +216,10 @@ function HeroFrame({
     <div className="relative aspect-[16/10] flex-1 overflow-hidden rounded-[6px] border border-border bg-hover sm:aspect-auto">
       {url ? (
         isVideoUrl(url) ? (
+          // preload="auto" so the first frame paints immediately; onLoadedData
+          // explicitly kicks off play() because Chrome occasionally ignores
+          // the autoplay attribute when React races to set `muted` on the
+          // element. Falls back silently if the browser still refuses to play.
           <video
             src={url}
             aria-label={title}
@@ -223,7 +227,22 @@ function HeroFrame({
             loop
             playsInline
             autoPlay
-            preload="metadata"
+            preload="auto"
+            controls={false}
+            ref={(el) => {
+              // Force the muted property to be set on the DOM node before
+              // any play() attempt — React occasionally drops the attribute,
+              // and an unmuted autoplay gets blocked by Chrome.
+              if (el) el.muted = true;
+            }}
+            onLoadedData={(e) => {
+              const v = e.currentTarget;
+              v.muted = true;
+              const playP = v.play();
+              if (playP && typeof playP.catch === "function") {
+                playP.catch(() => undefined);
+              }
+            }}
             className="h-full w-full object-cover"
           />
         ) : (
