@@ -1,6 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+
+const HERO_SIZES = "(min-width: 640px) 50vw, 100vw";
 
 type Props = {
   src: string;
@@ -9,26 +12,24 @@ type Props = {
 };
 
 /**
- * Hero video with mobile-friendly behavior:
+ * Hero video with calm-by-default playback:
  *
- *  • Desktop (hover-capable pointer): a muted-autoplay-loop <video>. The
- *    `poster` attribute paints the first frame while the data is still
- *    fetching, so the tile never reads as blank.
+ *  • Desktop (hover-capable pointer): shows the poster still on mount;
+ *    starts playback when the pointer enters the tile and pauses on leave.
+ *    Stops 8 tiles from auto-animating simultaneously — only the one the
+ *    user is looking at moves.
  *  • Touch devices (phones, tablets): renders a plain <img src={poster}>
- *    by default — no autoplay, no decoded video, no chrome. Reads exactly
- *    like a static image. Tapping swaps to a <video> and starts playback
- *    silently. Tapping again pauses.
+ *    by default — no decoded video, no chrome. Tapping swaps to a <video>
+ *    and starts playback; tap again to pause.
  *
  * If `posterUrl` is null (legacy uploads pre-poster extraction), we fall
- * back to rendering the <video> directly on every device. Autoplay still
- * works on modern mobile browsers for muted + playsInline videos.
+ * back to a video that autoplays — better than a blank tile.
  */
 export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   // null until matchMedia runs — avoids SSR/CSR drift on the autoplay attr.
   const [isTouch, setIsTouch] = useState<boolean | null>(null);
-  // On touch devices: stay on the poster <img> until the user explicitly
-  // taps, then mount the <video> and play.
+  // Touch + has-poster path: stays on the poster <img> until tapped.
   const [activated, setActivated] = useState(false);
 
   useEffect(() => {
@@ -47,21 +48,20 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
         type="button"
         aria-label={`Play ${ariaLabel}`}
         onClick={() => setActivated(true)}
-        className="block h-full w-full"
+        className="relative block h-full w-full"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={posterUrl}
           alt={ariaLabel}
-          className="h-full w-full object-cover"
+          fill
+          sizes={HERO_SIZES}
+          className="object-cover"
           draggable={false}
         />
       </button>
     );
   }
 
-  // Once activated on touch, OR on desktop, OR when there's no poster to
-  // fall back to: render the actual <video>.
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
@@ -74,14 +74,36 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
     }
   };
 
-  // Autoplay rule: desktop yes; touch with no poster (legacy) yes; touch
-  // with poster + activated yes (the user just tapped). `isTouch` is null
-  // before matchMedia runs — treat that window as "not yet touch" so the
-  // SSR render matches.
+  // Desktop = hover-to-play (no autoplay). Touch with no poster (legacy) =
+  // autoplay so the tile isn't blank. Touch with poster + activated =
+  // autoplay (the user just tapped).
+  const desktopHoverMode = isTouch === false;
   const shouldAutoplay: boolean =
-    isTouch === false ||
-    (isTouch === true && !posterUrl) ||
-    (isTouch === true && activated);
+    (isTouch === true && !posterUrl) || (isTouch === true && activated);
+
+  // Hover handlers for desktop. play() is called inside the event handler
+  // so it inherits user-gesture context, which keeps Safari's autoplay
+  // policy happy even though muted videos don't strictly require it.
+  const onEnter = () => {
+    if (!desktopHoverMode) return;
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = true;
+    const p = v.play();
+    if (p && typeof p.catch === "function") p.catch(() => undefined);
+  };
+  const onLeave = () => {
+    if (!desktopHoverMode) return;
+    const v = videoRef.current;
+    if (!v) return;
+    v.pause();
+    // Rewind so the next hover starts fresh on the poster frame.
+    try {
+      v.currentTime = 0;
+    } catch {
+      // ignore — Safari sometimes throws when the metadata isn't ready.
+    }
+  };
 
   return (
     <video
@@ -96,7 +118,9 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
       loop
       playsInline
       autoPlay={shouldAutoplay}
-      preload={shouldAutoplay ? "auto" : "metadata"}
+      // Pre-fetch metadata on desktop so play() on hover responds instantly;
+      // touch path doesn't need this (we render an <img> instead).
+      preload={shouldAutoplay || desktopHoverMode ? "auto" : "metadata"}
       controls={false}
       onLoadedData={(e) => {
         if (!shouldAutoplay) return;
@@ -105,6 +129,8 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
         const p = v.play();
         if (p && typeof p.catch === "function") p.catch(() => undefined);
       }}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
       onClick={isTouch ? togglePlay : undefined}
       className="h-full w-full object-cover"
     />

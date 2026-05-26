@@ -326,8 +326,10 @@ export function Gallery({
   if (!editable) {
     return (
       <div className="flex flex-col gap-12">
-        {groups.map((g) => (
-          <VisitorGallerySection key={g.id} group={g} />
+        {groups.map((g, gi) => (
+          // First section gets eager-loaded first row (above the fold);
+          // every other section lazy-loads to keep the network sane.
+          <VisitorGallerySection key={g.id} group={g} prioritizeFirstRow={gi === 0} />
         ))}
       </div>
     );

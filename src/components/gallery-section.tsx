@@ -17,6 +17,12 @@ type CommonProps = {
   group: GalleryGroup;
 };
 
+type VisitorProps = CommonProps & {
+  /** When true, the first two tiles in this section preload eagerly
+   *  (used for the first/above-the-fold section to improve LCP). */
+  prioritizeFirstRow?: boolean;
+};
+
 type OwnerProps = CommonProps & {
   onRename: (name: string) => void;
   onDelete: () => void;
@@ -103,7 +109,10 @@ export function GallerySection({
 }
 
 /** Read-only section for visitors: just the header and a static grid. */
-export function VisitorGallerySection({ group }: CommonProps) {
+export function VisitorGallerySection({
+  group,
+  prioritizeFirstRow = false,
+}: VisitorProps) {
   if (group.projects.length === 0) return null;
   return (
     <section className="flex flex-col gap-4">
@@ -111,11 +120,12 @@ export function VisitorGallerySection({ group }: CommonProps) {
         {group.name}
       </h2>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:auto-rows-[260px]">
-        {group.projects.map((p) => (
+        {group.projects.map((p, i) => (
           <GalleryCard
             key={p.id}
             project={p}
             spanClass={spanClass(p.colSpan, p.rowSpan)}
+            priority={prioritizeFirstRow && i < 2}
           />
         ))}
       </div>

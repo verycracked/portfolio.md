@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -14,16 +15,28 @@ import { HeroVideo } from "@/components/hero-video";
 import { isVideoUrl } from "@/lib/media";
 import type { GalleryProject } from "@/components/gallery-types";
 
+// Sizes hint for the bento grid: ≥640px = at most half the 1280px content
+// area (one column out of two), below = roughly the viewport. Drives
+// Next/Image's srcset so we don't ship 2MB PNGs at 512px on-screen.
+const HERO_SIZES = "(min-width: 640px) 50vw, 100vw";
+
 type CommonProps = {
   project: GalleryProject;
   /** Classes applied to the outer grid cell — usually col/row-span. */
   spanClass: string;
   /** Optional fade-in delay (ms) to stagger reveal animations. */
   revealDelayMs?: number;
+  /** Skip lazy loading + emit a preload for tiles above the fold. */
+  priority?: boolean;
 };
 
 /** Visitor card — pure media, not interactive. */
-export function GalleryCard({ project, spanClass, revealDelayMs }: CommonProps) {
+export function GalleryCard({
+  project,
+  spanClass,
+  revealDelayMs,
+  priority,
+}: CommonProps) {
   const style: React.CSSProperties | undefined =
     revealDelayMs !== undefined
       ? ({ ["--reveal-delay" as string]: `${revealDelayMs}ms` } as React.CSSProperties)
@@ -36,6 +49,7 @@ export function GalleryCard({ project, spanClass, revealDelayMs }: CommonProps) 
           posterUrl={project.posterUrl}
           title={project.title}
           protected={project.isProtected}
+          priority={priority}
         />
       </CardShell>
     </div>
@@ -60,6 +74,7 @@ export function SortableGalleryCard({
   project,
   spanClass,
   revealDelayMs,
+  priority,
   onDelete,
   onResize,
   onResizeCommit,
@@ -158,6 +173,7 @@ export function SortableGalleryCard({
           posterUrl={project.posterUrl}
           title={project.title}
           protected={project.isProtected}
+          priority={priority}
         />
       </CardShell>
 
@@ -211,37 +227,36 @@ function HeroFrame({
   posterUrl,
   title,
   protected: isProtected,
+  priority = false,
 }: {
   url: string | null;
   posterUrl?: string | null;
   title: string;
   protected?: boolean;
+  priority?: boolean;
 }) {
   return (
     <div className="relative aspect-[16/10] flex-1 overflow-hidden rounded-[6px] border border-border bg-hover sm:aspect-auto">
       {url ? (
         isVideoUrl(url) ? (
-          // HeroVideo autoplays on desktop, stays paused with a tap-to-play
-          // affordance on touch devices (saves data + keeps mobile calm).
+          // HeroVideo plays on hover on desktop; on touch it shows the
+          // poster <img> and the user taps to play.
           <HeroVideo
             src={url}
             posterUrl={posterUrl ?? null}
             ariaLabel={title}
           />
         ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          // Next/Image proxies through the Vercel image optimizer so the
+          // browser receives a webp/avif scaled to the actual on-screen
+          // pixel dimensions instead of the raw multi-MB PNG.
+          <Image
             src={url}
             alt={title}
-            loading="lazy"
-            // When the browser pre-decodes a cached image, onLoad fires
-            // before React attaches the listener. Probe `.complete` in the
-            // ref callback so cached images don't stay stuck at opacity 0.
-            ref={(el) => {
-              if (el?.complete) el.classList.add("is-loaded");
-            }}
-            onLoad={(e) => e.currentTarget.classList.add("is-loaded")}
-            className="img-fade h-full w-full object-cover"
+            fill
+            sizes={HERO_SIZES}
+            priority={priority}
+            className="object-cover"
           />
         )
       ) : (
