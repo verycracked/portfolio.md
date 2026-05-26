@@ -10,6 +10,7 @@ import {
   Lock,
   X,
 } from "@phosphor-icons/react/dist/ssr";
+import { HeroVideo } from "@/components/hero-video";
 import { isVideoUrl } from "@/lib/media";
 import type { GalleryProject } from "@/components/gallery-types";
 
@@ -216,35 +217,9 @@ function HeroFrame({
     <div className="relative aspect-[16/10] flex-1 overflow-hidden rounded-[6px] border border-border bg-hover sm:aspect-auto">
       {url ? (
         isVideoUrl(url) ? (
-          // preload="auto" so the first frame paints immediately; onLoadedData
-          // explicitly kicks off play() because Chrome occasionally ignores
-          // the autoplay attribute when React races to set `muted` on the
-          // element. Falls back silently if the browser still refuses to play.
-          <video
-            src={url}
-            aria-label={title}
-            muted
-            loop
-            playsInline
-            autoPlay
-            preload="auto"
-            controls={false}
-            ref={(el) => {
-              // Force the muted property to be set on the DOM node before
-              // any play() attempt — React occasionally drops the attribute,
-              // and an unmuted autoplay gets blocked by Chrome.
-              if (el) el.muted = true;
-            }}
-            onLoadedData={(e) => {
-              const v = e.currentTarget;
-              v.muted = true;
-              const playP = v.play();
-              if (playP && typeof playP.catch === "function") {
-                playP.catch(() => undefined);
-              }
-            }}
-            className="h-full w-full object-cover"
-          />
+          // HeroVideo autoplays on desktop, stays paused with a tap-to-play
+          // affordance on touch devices (saves data + keeps mobile calm).
+          <HeroVideo src={url} ariaLabel={title} />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
