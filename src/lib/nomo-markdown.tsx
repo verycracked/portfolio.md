@@ -22,7 +22,6 @@ import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
 import type { Components } from "react-markdown";
 import type { ProjectSummary } from "@/lib/case-study";
 import { CaseStudyPill } from "@/components/case-study-pill";
-import { MediaBlock } from "@/components/media-reorder";
 import { PillArrow } from "@/components/pill-arrow";
 import { isVideoUrl } from "@/lib/media";
 import { slugify } from "@/lib/slug";
@@ -232,18 +231,9 @@ function buildComponents(ctx: RenderContext): Components {
       const h = params.get("h");
       const width = w ? Number(w) : undefined;
       const height = h ? Number(h) : undefined;
-      // Unsized images (the dropzone always appends `![](url)` with no
-      // dimensions) are treated as reorderable media blocks. MediaBlock
-      // falls back to plain rendering when the user isn't an owner OR the
-      // URL isn't in the active reorder context, so visitors see the same
-      // markup as before.
-      const sized = width !== undefined || height !== undefined;
-      if (!sized) {
-        return <MediaBlock url={base} alt={alt} />;
-      }
       // Video URLs (mp4/webm) come in through the same `![](url)` syntax so
-      // dropped uploads always Just Work. Autoplay muted+loop matches the
-      // gallery treatment so videos read like animated hero stills.
+      // older content still renders correctly. Autoplay muted+loop matches
+      // the gallery treatment so videos read like animated hero stills.
       if (isVideoUrl(base)) {
         return (
           <video

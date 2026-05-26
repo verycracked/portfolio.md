@@ -9,11 +9,6 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
 
-type Props = {
-  /** Markdown slug to append uploads to (e.g. "human"). */
-  slug: string;
-};
-
 type DragPreview = {
   count: number;
   /** "image", "video", "mixed", or null when we can't tell from items alone. */
@@ -30,25 +25,23 @@ const TOAST_DEFAULT_MS = 2500;
 const TOAST_LONG_MS = 4000;
 
 /**
- * Owner-only drop target that covers the homepage. Drag images or videos
- * anywhere; each one uploads to R2 and the markdown body for `slug` gets a
- * new `![](url)` line appended. The page is then refreshed so the new media
- * renders in place.
+ * Owner-only window-wide drop target. Each dropped image or video uploads to
+ * R2 and then becomes a new Project tile (with the file as its hero) so the
+ * media lives alongside the existing case studies in the gallery section.
+ * Refreshes on success so the new tiles appear in place.
  *
  * Visuals:
- *   • Full-window dimmed scrim with a pulsing dashed border while a drag is
- *     in progress, so the affordance reads from anywhere on the page.
- *   • A center card shows an upload icon, the file count, and what kind of
- *     media is being dropped (image / video / mixed).
- *   • A bottom-center toast surfaces upload progress and result state with
- *     a colored leading icon (info / success / error).
+ *   • Full-window dimmed scrim with a dashed border while a drag is in
+ *     progress — works from anywhere on the page.
+ *   • Center card surfaces the upload icon and the file count + kind.
+ *   • Bottom toast surfaces progress and result state.
  */
-export function HomeDropzone({ slug }: Props) {
+export function HomeDropzone() {
   const router = useRouter();
   const [preview, setPreview] = useState<DragPreview | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   // dragenter/dragleave fire for every nested element, so we track depth
-  // to avoid flicker.
+  // to avoid flicker between sibling targets.
   const dragDepth = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -57,8 +50,7 @@ export function HomeDropzone({ slug }: Props) {
   }, []);
 
   const showToast = (tone: Toast["tone"], message: string, ms = TOAST_DEFAULT_MS) => {
-    const id = Date.now();
-    setToast({ id, tone, message });
+    setToast({ id: Date.now(), tone, message });
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), ms);
   };
@@ -123,7 +115,7 @@ export function HomeDropzone({ slug }: Props) {
       window.removeEventListener("drop", onDrop);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+  }, []);
 
   const handleFiles = async (files: File[]) => {
     const total = files.length;
@@ -133,69 +125,54 @@ export function HomeDropzone({ slug }: Props) {
       60_000
     );
 
-    const urls: string[] = [];
+    let created = 0;
     let firstFailure: string | null = null;
     let done = 0;
 
-    await Promise.all(
-      files.map(async (file) => {
-        try {
-          const fd = new FormData();
-          fd.append("file", file);
-          const res = await fetch("/api/upload", { method: "POST", body: fd });
-          if (!res.ok) {
-            const data = (await res.json().catch(() => ({}))) as { error?: string };
-            throw new Error(data.error ?? `upload failed (${res.status})`);
-          }
-          const data = (await res.json()) as { url: string };
-          urls.push(data.url);
-        } catch (err) {
-          firstFailure =
-            firstFailure ?? (err instanceof Error ? err.message : "upload failed");
-        } finally {
-          done += 1;
-          if (total > 1) {
-            showToast("info", `Uploading ${done} of ${total}…`, 60_000);
-          }
+    // Run sequentially — keeps the resulting project order matching the
+    // drop order, which is what users expect when dropping multiple files.
+    for (const file of files) {
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const upload = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!upload.ok) {
+          const data = (await upload.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error ?? `upload failed (${upload.status})`);
         }
-      })
-    );
+        const { url } = (await upload.json()) as { url: string };
 
-    if (urls.length === 0) {
+        const project = await fetch("/api/projects", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ title: "Untitled", heroImageUrl: url }),
+        });
+        if (!project.ok) {
+          const data = (await project.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error ?? `couldn't create tile (${project.status})`);
+        }
+        created += 1;
+      } catch (err) {
+        firstFailure =
+          firstFailure ?? (err instanceof Error ? err.message : "upload failed");
+      } finally {
+        done += 1;
+        if (total > 1) {
+          showToast("info", `Uploading ${done} of ${total}…`, 60_000);
+        }
+      }
+    }
+
+    if (created === 0) {
       showToast("error", firstFailure ?? "Upload failed", TOAST_LONG_MS);
       return;
     }
 
-    // Append each uploaded URL as a markdown image line. The renderer
-    // detects video extensions and swaps in a `<video>` element so the same
-    // `![](url)` token covers both cases.
-    const appended = urls.map((url) => `![](${url})`).join("\n\n");
-    try {
-      const current = await fetch(`/api/pages/${slug}`).then((r) =>
-        r.ok ? r.json().then((d: { body: string }) => d.body) : ""
-      );
-      const nextBody = `${(current ?? "").replace(/\s+$/, "")}\n\n${appended}\n`;
-      const save = await fetch(`/api/pages/${slug}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ body: nextBody }),
-      });
-      if (!save.ok) throw new Error(`save failed (${save.status})`);
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "save failed",
-        TOAST_LONG_MS
-      );
-      return;
-    }
-
-    const ok = urls.length;
     showToast(
       firstFailure ? "error" : "success",
       firstFailure
-        ? `Added ${ok}/${total} — ${firstFailure}`
-        : `Added ${ok} ${ok === 1 ? "file" : "files"}`,
+        ? `Added ${created}/${total} — ${firstFailure}`
+        : `Added ${created} ${created === 1 ? "tile" : "tiles"}`,
       firstFailure ? TOAST_LONG_MS : TOAST_DEFAULT_MS
     );
     router.refresh();
@@ -222,16 +199,13 @@ function DragOverlay({ preview }: { preview: DragPreview }) {
       transition={{ duration: 0.12 }}
       className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
     >
-      {/* Dim scrim — full window */}
       <div className="absolute inset-0 bg-bg/70 backdrop-blur-[3px]" />
-      {/* Animated dashed frame — sits inside the safe-area padding */}
       <motion.div
         className="absolute inset-3 rounded-[10px] border-2 border-dashed border-fg/60"
         initial={{ scale: 0.995, opacity: 0.6 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
       />
-      {/* Centered card */}
       <motion.div
         initial={{ opacity: 0, y: 8, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -243,7 +217,7 @@ function DragOverlay({ preview }: { preview: DragPreview }) {
           <UploadSimple size={22} weight="bold" aria-hidden />
         </span>
         <div className="flex flex-col gap-1">
-          <p className="text-[15px] font-medium text-fg">Drop to upload</p>
+          <p className="text-[15px] font-medium text-fg">Drop to add</p>
           <p className="text-[12px] text-muted">{label}</p>
         </div>
       </motion.div>
@@ -288,9 +262,7 @@ function ToastBubble({ toast }: { toast: Toast }) {
 
 function formatPreviewLabel(preview: DragPreview): string {
   const { count, kind } = preview;
-  if (count <= 0) {
-    return "Release to upload images or videos";
-  }
+  if (count <= 0) return "Release to add a tile";
   const noun =
     kind === "image"
       ? count === 1
@@ -303,5 +275,5 @@ function formatPreviewLabel(preview: DragPreview): string {
         : count === 1
           ? "file"
           : "files";
-  return `${count} ${noun} ready`;
+  return `${count} ${noun} → ${count === 1 ? "1 new tile" : `${count} new tiles`}`;
 }

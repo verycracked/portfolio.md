@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Reorder } from "motion/react";
-import { ArrowUpRight, Image as ImageIcon, Lock, Plus } from "@phosphor-icons/react/dist/ssr";
+import {
+  ArrowUpRight,
+  DotsSixVertical,
+  Image as ImageIcon,
+  Lock,
+  Plus,
+  X,
+} from "@phosphor-icons/react/dist/ssr";
 import { isVideoUrl } from "@/lib/media";
 
 export type GalleryProject = {
@@ -93,6 +100,21 @@ export function Gallery({
     persistOrder(next);
   };
 
+  // Owner-only single-tile delete. Optimistic: drop the card immediately and
+  // only re-fetch on a server error.
+  const handleDelete = async (id: string) => {
+    const snapshot = projects;
+    setProjects((cur) => cur.filter((p) => p.id !== id));
+    try {
+      const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setProjects(snapshot);
+      }
+    } catch {
+      setProjects(snapshot);
+    }
+  };
+
   if (projects.length === 0 && !editable) {
     return (
       <div
@@ -152,7 +174,7 @@ export function Gallery({
           }}
           transition={{ type: "spring", stiffness: 520, damping: 38 }}
         >
-          <Card project={p} owner />
+          <Card project={p} owner onDelete={() => void handleDelete(p.id)} />
         </Reorder.Item>
       ))}
       <div
@@ -186,28 +208,67 @@ function CardShell({ children }: { children: React.ReactNode }) {
  * Image-only portfolio card. Click navigates to the project surface; the
  * hero (image or video) fills the entire card. Title + description live on
  * the project page itself, not on the card thumbnail.
+ *
+ * Owner-mode adds a hover "×" delete button and a small "drag" hint chip
+ * — the same affordance language used elsewhere for media tiles.
  */
-function Card({ project, owner }: { project: GalleryProject; owner: boolean }) {
+function Card({
+  project,
+  owner,
+  onDelete,
+}: {
+  project: GalleryProject;
+  owner: boolean;
+  onDelete?: () => void;
+}) {
+  // We want the drag handle (entire card) to keep working, but the X needs
+  // its own pointer target without triggering the Link nav. Compose the
+  // Link with absolute-positioned hover chrome.
   return (
-    <Link
-      href={`/projects/${project.slug}`}
-      className="group relative block h-full"
-      aria-label={project.title}
-    >
-      <CardShell>
-        <HeroFrame
-          url={project.heroImageUrl}
-          title={project.title}
-          protected={project.isProtected}
-        />
-      </CardShell>
+    <div className="group relative h-full">
+      <Link
+        href={`/projects/${project.slug}`}
+        className="block h-full"
+        aria-label={project.title}
+      >
+        <CardShell>
+          <HeroFrame
+            url={project.heroImageUrl}
+            title={project.title}
+            protected={project.isProtected}
+          />
+        </CardShell>
+      </Link>
       {owner && (
-        <span className="pointer-events-none absolute right-3 top-3 inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/90 px-2 py-0.5 text-[10px] text-muted opacity-0 transition-opacity group-hover:opacity-100">
-          Open
-          <ArrowUpRight weight="fill" size={10} aria-hidden />
-        </span>
+        <>
+          <span className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-1.5 py-0.5 text-[10px] text-muted opacity-0 transition-opacity group-hover:opacity-100">
+            <DotsSixVertical size={11} weight="bold" aria-hidden />
+            Drag
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (
+                !confirm(`Remove "${project.title}"? This deletes the tile.`)
+              ) {
+                return;
+              }
+              onDelete?.();
+            }}
+            aria-label={`Remove ${project.title}`}
+            className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-[4px] border border-border-soft bg-content/85 text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
+          >
+            <X size={11} weight="bold" aria-hidden />
+          </button>
+          <span className="pointer-events-none absolute right-12 top-3 inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-1.5 py-0.5 text-[10px] text-muted opacity-0 transition-opacity group-hover:opacity-100">
+            Open
+            <ArrowUpRight weight="fill" size={10} aria-hidden />
+          </span>
+        </>
       )}
-    </Link>
+    </div>
   );
 }
 
