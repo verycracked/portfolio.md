@@ -275,6 +275,30 @@ a, button, input, textarea, select {
   mask-composite: exclude;
 }
 
+/* Nomo pill: on hover the ↗ icon shoots up-and-right, fades, then a new
+ * arrow eases back in from the lower-left — the "magic link" swap effect. */
+@keyframes nomo-arrow-shoot {
+  0% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(6px, -6px);
+    opacity: 0;
+  }
+  46% {
+    transform: translate(-4px, 4px);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+}
+.nomo-pill:hover .nomo-pill-arrow {
+  animation: nomo-arrow-shoot 520ms var(--ease-out-quart);
+}
+
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,

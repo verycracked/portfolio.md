@@ -10,18 +10,47 @@ export async function POST(
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const { url, caption } = (await req.json()) as { url?: string; caption?: string };
+  const { url, caption, surfaceId } = (await req.json()) as {
+    url?: string;
+    caption?: string;
+    surfaceId?: string;
+  };
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
 
+  // Resolve target surface. Callers may omit it; we then attach to the
+  // project's first surface (creation order) so existing extension clients
+  // keep working without changes.
+  let targetSurfaceId = surfaceId;
+  if (!targetSurfaceId) {
+    const first = await prisma.surface.findFirst({
+      where: { projectId: id },
+      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      select: { id: true },
+    });
+    if (!first) {
+      return NextResponse.json(
+        { error: "project has no surfaces" },
+        { status: 400 }
+      );
+    }
+    targetSurfaceId = first.id;
+  }
+
   const last = await prisma.projectImage.findFirst({
-    where: { projectId: id },
+    where: { surfaceId: targetSurfaceId },
     orderBy: { order: "desc" },
     select: { order: true },
   });
   const order = (last?.order ?? -1) + 1;
 
   const image = await prisma.projectImage.create({
-    data: { projectId: id, url, caption, order },
+    data: {
+      projectId: id,
+      surfaceId: targetSurfaceId,
+      url,
+      caption,
+      order,
+    },
   });
   return NextResponse.json(image);
 }

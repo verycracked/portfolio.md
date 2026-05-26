@@ -48,6 +48,8 @@ export async function POST(req: Request) {
   });
   const order = (last?.order ?? -1) + 1;
 
+  // Every project ships with a default "Overview" surface so the editor and
+  // the public page always have at least one tab to render.
   const project = await prisma.project.create({
     data: {
       slug,
@@ -56,6 +58,14 @@ export async function POST(req: Request) {
       sourceUrl: body.sourceUrl,
       heroImageUrl: body.heroImageUrl,
       order,
+      surfaces: {
+        create: {
+          slug: "overview",
+          name: "Overview",
+          heroImageUrl: body.heroImageUrl ?? null,
+          order: 0,
+        },
+      },
     },
   });
   return NextResponse.json(project);

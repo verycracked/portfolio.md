@@ -12,6 +12,9 @@ model Project {
   slug          String          @unique
   title         String
   description   String          @default("")
+  // DEPRECATED: legacy project-level content. After surfaces shipped, content
+  // lives on Surface.body / Surface.heroImageUrl. Kept here as a non-breaking
+  // fallback for the public page until everything is migrated.
   body          String          @default("")
   heroImageUrl  String?
   sourceUrl     String?
@@ -21,16 +24,45 @@ model Project {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   images        ProjectImage[]
+  assets        Asset[]
+  surfaces      Surface[]
+}
+
+// A "product surface" is a tab inside a project: e.g. Web, Mobile, Marketing.
+// Each surface owns its own hero, body, and gallery of images. Order is the
+// left-to-right tab order; slug is unique within the parent project.
+model Surface {
+  id           String         @id @default(cuid())
+  projectId    String
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  slug         String
+  name         String
+  body         String         @default("")
+  heroImageUrl String?
+  order        Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  images       ProjectImage[]
+
+  @@unique([projectId, slug])
+  @@index([projectId])
 }
 
 model ProjectImage {
   id        String   @id @default(cuid())
+  // projectId is denormalized so we can keep cascade-on-project-delete cheap
+  // and continue to filter by project quickly. surfaceId is the source of
+  // truth for which tab the image renders under.
   projectId String
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  surfaceId String
+  surface   Surface  @relation(fields: [surfaceId], references: [id], onDelete: Cascade)
   url       String
   caption   String?
   order     Int      @default(0)
   createdAt DateTime @default(now())
+
+  @@index([surfaceId])
 }
 
 // Singleton site settings. id is always "main".
@@ -50,15 +82,6 @@ model ExtensionToken {
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
   revoked    Boolean   @default(false)
-}
-
-model Project {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  assets    Asset[]
 }
 
 model Asset {

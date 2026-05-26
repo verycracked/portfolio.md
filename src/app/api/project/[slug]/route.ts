@@ -40,7 +40,8 @@ export async function GET(
   return NextResponse.json({
     id: project.id,
     slug: project.slug,
-    name: project.name,
+    name: project.title,
+    title: project.title,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
     assets: project.assets,

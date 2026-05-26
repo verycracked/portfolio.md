@@ -7,6 +7,7 @@ import { ArrowUpRight, Image as ImageIcon, Lock, Pencil, Plus } from "@phosphor-
 import { EditableText } from "@/components/editable-text";
 import { Avatar } from "@/components/avatar";
 import { usePointerLight } from "@/lib/use-pointer-light";
+import { isVideoUrl } from "@/lib/media";
 
 export type GalleryProject = {
   id: string;
@@ -33,12 +34,12 @@ export function Gallery({
   const editable = owner && !previewing;
   return (
     <main className="mx-auto max-w-3xl px-8 py-16">
-      {(owner || avatarUrl) && (
+      {(editable || avatarUrl) && (
         <div
           className="animate-fade-rise mb-8"
           style={{ ["--reveal-delay" as string]: "40ms" }}
         >
-          <Avatar initialUrl={avatarUrl} owner={owner} />
+          <Avatar initialUrl={avatarUrl} editable={editable} />
         </div>
       )}
       <header
@@ -94,7 +95,7 @@ function OwnerHeaderActions({ previewing }: { previewing: boolean }) {
     <div className="flex items-center gap-4 text-[12px]">
       {previewing ? (
         <Link
-          href="/"
+          href="/portfolio.md"
           className="inline-flex items-center gap-1 text-fg underline-offset-2 hover:underline"
         >
           <Pencil weight="fill" size={12} aria-hidden />
@@ -109,7 +110,7 @@ function OwnerHeaderActions({ previewing }: { previewing: boolean }) {
             Settings
           </Link>
           <Link
-            href="/?preview=1"
+            href="/portfolio.md?preview=1"
             className="text-muted underline-offset-2 hover:text-fg hover:underline"
           >
             Preview ↗
@@ -234,14 +235,27 @@ function HeroFrame({
   return (
     <div className="relative aspect-[16/10] overflow-hidden rounded-[6px] border border-border bg-hover">
       {url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={url}
-          alt={title}
-          loading="lazy"
-          onLoad={(e) => e.currentTarget.classList.add("is-loaded")}
-          className="img-fade h-full w-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.02]"
-        />
+        isVideoUrl(url) ? (
+          <video
+            src={url}
+            aria-label={title}
+            muted
+            loop
+            playsInline
+            autoPlay
+            preload="metadata"
+            className="h-full w-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.02]"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={url}
+            alt={title}
+            loading="lazy"
+            onLoad={(e) => e.currentTarget.classList.add("is-loaded")}
+            className="img-fade h-full w-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-[1.02]"
+          />
+        )
       ) : (
         <div className="flex h-full items-center justify-center text-tertiary">
           <ImageIcon size={28} weight="fill" aria-label="No image" />

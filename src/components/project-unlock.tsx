@@ -38,7 +38,7 @@ export function ProjectUnlock({ projectId, title, description }: Props) {
   return (
     <main className="mx-auto max-w-3xl px-8 py-12">
       <Link
-        href="/"
+        href="/portfolio.md"
         className="animate-fade-in text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
       >
         ← Back

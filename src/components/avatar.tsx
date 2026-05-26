@@ -5,7 +5,9 @@ import { useRef, useState } from "react";
 
 type Props = {
   initialUrl: string | null;
-  owner: boolean;
+  /** Controls the upload/remove UX. False renders a static image (visitor
+   *  view) — owners pass `false` when previewing the public-facing site. */
+  editable: boolean;
 };
 
 async function uploadFile(file: File): Promise<string> {
@@ -17,7 +19,7 @@ async function uploadFile(file: File): Promise<string> {
   return data.url;
 }
 
-export function Avatar({ initialUrl, owner }: Props) {
+export function Avatar({ initialUrl, editable }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [url, setUrl] = useState<string | null>(initialUrl);
@@ -48,7 +50,7 @@ export function Avatar({ initialUrl, owner }: Props) {
     }
   };
 
-  if (!owner) {
+  if (!editable) {
     if (!url) return null;
     return (
       <div className="size-16 overflow-hidden rounded-full border border-border bg-content">

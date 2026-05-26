@@ -46,15 +46,17 @@ export async function POST(req: Request) {
     }
 
     const nameRaw = form.get("projectName");
-    const name =
+    const title =
       typeof nameRaw === "string" && nameRaw.trim() !== ""
         ? nameRaw.trim().slice(0, 100)
         : humanize(slug);
 
+    // Auto-create projects on upload (for the extension flow). Existing projects
+    // are matched by slug; we never overwrite the owner's title via this path.
     const project = await prisma.project.upsert({
       where: { slug },
       update: {},
-      create: { slug, name },
+      create: { slug, title },
     });
     projectId = project.id;
     projectSlug = project.slug;

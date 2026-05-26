@@ -13,19 +13,40 @@ export default async function EditProject({
   await requireOwner(`/edit/${id}`);
   const project = await prisma.project.findUnique({
     where: { id },
-    include: { images: { orderBy: { order: "asc" } } },
+    include: {
+      surfaces: {
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+        include: { images: { orderBy: { order: "asc" } } },
+      },
+    },
   });
   if (!project) notFound();
 
   // strip hash before passing to client
   const { passwordHash, ...rest } = project;
-  const projectClient = { ...rest, isProtected: !!passwordHash };
+  const projectClient = {
+    ...rest,
+    isProtected: !!passwordHash,
+    surfaces: project.surfaces.map((s) => ({
+      id: s.id,
+      slug: s.slug,
+      name: s.name,
+      body: s.body,
+      heroImageUrl: s.heroImageUrl,
+      order: s.order,
+      images: s.images.map((i) => ({
+        id: i.id,
+        url: i.url,
+        caption: i.caption,
+      })),
+    })),
+  };
 
   return (
     <main className="mx-auto max-w-3xl px-8 py-12">
       <header className="mb-10 flex items-center justify-between">
         <Link
-          href="/edit"
+          href="/portfolio.md"
           className="text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
         >
           ← All projects
