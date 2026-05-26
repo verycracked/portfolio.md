@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ArrowUpRight,
   CornersOut,
   DotsSixVertical,
   Image as ImageIcon,
@@ -23,11 +21,7 @@ type CommonProps = {
   revealDelayMs?: number;
 };
 
-/**
- * Visitor card — plain `<Link>` wrapping the image/video. No drag, no
- * delete. Used both directly on /(site) for visitors and inside the
- * dnd-kit DragOverlay for the lifted "ghost" while dragging.
- */
+/** Visitor card — pure media, not interactive. */
 export function GalleryCard({ project, spanClass, revealDelayMs }: CommonProps) {
   const style: React.CSSProperties | undefined =
     revealDelayMs !== undefined
@@ -35,19 +29,13 @@ export function GalleryCard({ project, spanClass, revealDelayMs }: CommonProps) 
       : undefined;
   return (
     <div className={`relative ${spanClass}`} style={style}>
-      <Link
-        href={`/projects/${project.slug}`}
-        aria-label={project.title}
-        className="group block h-full"
-      >
-        <CardShell>
-          <HeroFrame
-            url={project.heroImageUrl}
-            title={project.title}
-            protected={project.isProtected}
-          />
-        </CardShell>
-      </Link>
+      <CardShell>
+        <HeroFrame
+          url={project.heroImageUrl}
+          title={project.title}
+          protected={project.isProtected}
+        />
+      </CardShell>
     </div>
   );
 }
@@ -61,11 +49,10 @@ type OwnerProps = CommonProps & {
 };
 
 /**
- * Owner card — wraps the visual card in a dnd-kit `useSortable` and adds
- * hover affordances (drag chip, delete button, resize handle). The
- * sortable node *is* the grid cell so dnd-kit's per-card transform
- * reorders the visual layout, not an inner wrapper. Must be rendered
- * inside a `<SortableContext>`.
+ * Owner card — the entire tile IS the drag handle, and the dnd-kit transform
+ * is applied directly to the tile so it moves under the cursor. Hover gives
+ * you a drag chip, delete button, and a corner resize handle. The whole
+ * card is non-navigable; tiles are pure media on the homepage.
  */
 export function SortableGalleryCard({
   project,
@@ -83,10 +70,21 @@ export function SortableGalleryCard({
     sortable.setNodeRef(node);
   };
 
+  // Layer multiple transforms: the dnd-kit translation that follows the
+  // cursor, plus a small rotate + scale lift while dragging. Composing as
+  // a single transform avoids a wrapper element.
+  const base = CSS.Transform.toString(sortable.transform) ?? "";
+  const lift = sortable.isDragging ? "rotate(-1.4deg) scale(1.04)" : "";
+  const composed = [base, lift].filter(Boolean).join(" ");
+
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(sortable.transform),
+    transform: composed || undefined,
     transition: sortable.transition,
     zIndex: sortable.isDragging ? 40 : undefined,
+    boxShadow: sortable.isDragging
+      ? "0 24px 56px -16px rgb(0 0 0 / 0.55)"
+      : undefined,
+    cursor: sortable.isDragging ? "grabbing" : "grab",
   };
   if (revealDelayMs !== undefined) {
     (style as Record<string, string>)["--reveal-delay"] = `${revealDelayMs}ms`;
@@ -105,18 +103,14 @@ export function SortableGalleryCard({
     const rect = node.getBoundingClientRect();
     const startCol = project.colSpan;
     const startRow = project.rowSpan;
-    // Width/height of a single grid cell, inferred from the current rect.
     const cellW = rect.width / startCol;
     const cellH = rect.height / startRow;
-    // Anchor at the bottom-right corner of the tile at gesture start.
     const anchorX = rect.right;
     const anchorY = rect.bottom;
 
     const handleMove = (ev: PointerEvent) => {
       const dx = ev.clientX - anchorX;
       const dy = ev.clientY - anchorY;
-      // 40% threshold to flip — gives a nice "snap" feel without being
-      // too sticky on the way back.
       const nextCol =
         startCol === 1 && dx > cellW * 0.4
           ? 2
@@ -149,32 +143,21 @@ export function SortableGalleryCard({
       ref={setRefs}
       style={style}
       data-dragging={sortable.isDragging ? "1" : undefined}
-      className={`reorder-card group relative ${spanClass}`}
+      {...sortable.attributes}
+      {...sortable.listeners}
+      className={`reorder-card group relative select-none ${spanClass}`}
     >
-      <Link
-        href={`/projects/${project.slug}`}
-        aria-label={project.title}
-        className="block h-full cursor-grab select-none active:cursor-grabbing"
-        {...sortable.attributes}
-        {...sortable.listeners}
-        draggable={false}
-        onDragStart={(e) => e.preventDefault()}
-      >
-        <CardShell>
-          <HeroFrame
-            url={project.heroImageUrl}
-            title={project.title}
-            protected={project.isProtected}
-          />
-        </CardShell>
-      </Link>
+      <CardShell>
+        <HeroFrame
+          url={project.heroImageUrl}
+          title={project.title}
+          protected={project.isProtected}
+        />
+      </CardShell>
+
       <span className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-1.5 py-0.5 text-[10px] text-muted opacity-0 transition-opacity group-hover:opacity-100">
         <DotsSixVertical size={11} weight="bold" aria-hidden />
         Drag
-      </span>
-      <span className="pointer-events-none absolute right-12 top-3 inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-1.5 py-0.5 text-[10px] text-muted opacity-0 transition-opacity group-hover:opacity-100">
-        Open
-        <ArrowUpRight weight="fill" size={10} aria-hidden />
       </span>
       <button
         type="button"
@@ -182,24 +165,19 @@ export function SortableGalleryCard({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (
-            !confirm(`Remove "${project.title}"? This deletes the tile.`)
-          ) {
-            return;
-          }
+          if (!confirm(`Remove this tile?`)) return;
           onDelete();
         }}
-        aria-label={`Remove ${project.title}`}
+        aria-label="Remove tile"
         className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-[4px] border border-border-soft bg-content/85 text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
       >
         <X size={11} weight="bold" aria-hidden />
       </button>
       <button
         type="button"
-        aria-label={`Resize ${project.title}`}
+        aria-label="Resize tile"
         onPointerDown={startResize}
         onClick={(e) => {
-          // Don't let a stray click bubble into the Link nav.
           e.preventDefault();
           e.stopPropagation();
         }}
@@ -256,9 +234,8 @@ function HeroFrame({
           />
         )
       ) : (
-        // Empty hero — a soft gradient + the project title so the slot
-        // still reads as a real card during drag and at rest, rather than
-        // looking like a broken placeholder.
+        // Empty hero — soft gradient + title placeholder so a tile without
+        // media still reads as a real tile rather than a broken slot.
         <div className="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-hover via-content to-hover px-4 text-center text-muted">
           <ImageIcon size={20} weight="bold" aria-hidden />
           <p className="line-clamp-2 text-[13px] font-medium text-fg">

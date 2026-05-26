@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   DndContext,
-  DragOverlay,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -45,8 +44,11 @@ export function Gallery({
   // PointerSensor with a small activation distance so plain clicks (without
   // movement) still navigate the underlying Link. Anything past 6px reads as
   // a drag.
+  // Small activation distance so a click still feels like a click; only a
+  // real drag (>4px movement) starts the gesture. With no underlying Link
+  // we don't need the larger 6px threshold anymore.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
   );
 
   useEffect(
@@ -161,8 +163,6 @@ export function Gallery({
     );
   }
 
-  const activeProject = projects.find((p) => p.id === activeId) ?? null;
-
   return (
     <DndContext
       sensors={sensors}
@@ -200,22 +200,6 @@ export function Gallery({
           </div>
         </div>
       </SortableContext>
-      <DragOverlay dropAnimation={null} adjustScale={false}>
-        {activeProject ? (
-          <div
-            className="pointer-events-none"
-            style={{
-              transform: "rotate(-1.2deg) scale(1.04)",
-              boxShadow: "0 24px 56px -16px rgb(0 0 0 / 0.55)",
-            }}
-          >
-            <GalleryCard
-              project={activeProject}
-              spanClass={spanClass(activeProject.colSpan, activeProject.rowSpan)}
-            />
-          </div>
-        ) : null}
-      </DragOverlay>
     </DndContext>
   );
 }
