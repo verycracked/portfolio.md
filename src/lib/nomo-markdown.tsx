@@ -23,6 +23,7 @@ import type { Components } from "react-markdown";
 import type { ProjectSummary } from "@/lib/case-study";
 import { CaseStudyPill } from "@/components/case-study-pill";
 import { PillArrow } from "@/components/pill-arrow";
+import { isVideoUrl } from "@/lib/media";
 import { slugify } from "@/lib/slug";
 
 /** Hidden marker we push into the markdown title attribute so the `a`
@@ -230,6 +231,23 @@ function buildComponents(ctx: RenderContext): Components {
       const h = params.get("h");
       const width = w ? Number(w) : undefined;
       const height = h ? Number(h) : undefined;
+      // Video URLs (mp4/webm) come in through the same `![](url)` syntax so
+      // dropped uploads always Just Work. Autoplay muted+loop matches the
+      // gallery treatment so videos read like animated hero stills.
+      if (isVideoUrl(base)) {
+        return (
+          <video
+            src={base}
+            width={width}
+            height={height}
+            className="rounded-[6px]"
+            muted
+            loop
+            playsInline
+            autoPlay
+          />
+        );
+      }
       // Square images are treated as avatars — circular crop, border + content
       // background to match the chrome the rest of the site uses.
       const isAvatar = width && height && width === height;

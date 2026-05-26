@@ -6,6 +6,7 @@ import { NomoMarkdown } from "@/lib/nomo-markdown";
 import { NomoEditor } from "@/components/nomo-editor";
 import { FadeIn } from "@/components/fade-in";
 import { Gallery } from "@/components/gallery";
+import { HomeDropzone } from "@/components/home-dropzone";
 import type { ProjectSummary } from "@/lib/case-study";
 
 export const metadata: Metadata = {
@@ -88,6 +89,7 @@ export default async function Home({
 
   return (
     <FadeIn>
+      {owner && !previewing && <HomeDropzone slug="human" />}
       <NomoMarkdown
         body={doc.body}
         context={{ avatarUrl: settings?.avatarUrl ?? null, caseStudies }}
