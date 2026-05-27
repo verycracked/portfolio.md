@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { CornersOut } from "@phosphor-icons/react/dist/ssr";
+import { SpeakerHigh } from "@phosphor-icons/react/dist/ssr";
 import { TheaterModal } from "@/components/theater-modal";
 
 const HERO_SIZES = "(min-width: 640px) 50vw, 100vw";
@@ -81,9 +81,11 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
     />
   ) : null;
 
-  // The expand chip is shared by both code paths. Pointer-down stop
-  // prevents dnd-kit from claiming the click as a drag in owner mode.
-  const expandButton = (
+  // Centered "Have a listen" CTA that appears on hover (desktop) and is
+  // always visible on touch. The backdrop-blur lifts the chip cleanly off
+  // the playing video underneath. Pointer-down stop prevents dnd-kit from
+  // claiming the click as a drag in owner mode.
+  const listenButton = (
     <button
       type="button"
       aria-label={`Open ${ariaLabel} with audio`}
@@ -93,10 +95,15 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
         e.stopPropagation();
         openTheater();
       }}
-      className="absolute bottom-3 left-3 z-10 inline-flex h-7 items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-2 text-[10px] text-muted opacity-0 backdrop-blur transition-[opacity,color] hover:text-fg group-hover:opacity-100"
+      className={
+        "absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-2.5 rounded-full border border-white/15 bg-black/35 px-5 py-3 text-[14px] font-medium text-white shadow-[0_18px_44px_-16px_rgb(0_0_0_/_0.7)] backdrop-blur-md transition-[opacity,transform] duration-200 ease-out " +
+        (isTouch
+          ? "opacity-100"
+          : "opacity-0 group-hover:opacity-100")
+      }
     >
-      <CornersOut size={11} weight="bold" aria-hidden />
-      Audio
+      <SpeakerHigh size={18} weight="fill" aria-hidden />
+      Have a listen
     </button>
   );
 
@@ -118,11 +125,13 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
               alt={ariaLabel}
               fill
               sizes={HERO_SIZES}
-              className="object-cover"
+              // Touch shows the listen chip permanently, so blur the poster
+              // permanently too — matches the hover-blur on desktop tiles.
+              className="object-cover blur-[2px]"
               draggable={false}
             />
           </button>
-          {expandButton}
+          {listenButton}
         </div>
         {theater}
       </>
@@ -192,9 +201,9 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
             e.stopPropagation();
             openTheater();
           }}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover transition-[filter] duration-200 ease-out group-hover:blur-[2px]"
         />
-        {expandButton}
+        {listenButton}
       </div>
       {theater}
     </>
