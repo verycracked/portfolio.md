@@ -8,7 +8,7 @@ import {
   useMotionValue,
   useSpring,
 } from "motion/react";
-import { ArrowUpRight, Lock } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
 import { isVideoUrl } from "@/lib/media";
 import { PillArrow } from "@/components/pill-arrow";
 import type { ProjectSummary } from "@/lib/case-study";
@@ -41,9 +41,6 @@ const PREVIEW_OFFSET_X = 22;
 const PREVIEW_OFFSET_Y = -6;
 const PREVIEW_WIDTH = 132;
 const PREVIEW_HEIGHT = 82; // 132 × 82 ≈ 16:10
-const TOOLTIP_OFFSET_X = 22;
-// Tooltip sits below the preview image with a small gap.
-const TOOLTIP_OFFSET_Y = PREVIEW_OFFSET_Y + PREVIEW_HEIGHT + 6;
 
 /**
  * Pill that matched a portfolio project by slug. At rest it's visually
@@ -121,7 +118,6 @@ export function CaseStudyPill({
         target={external ? "_blank" : undefined}
         rel={external ? "noopener noreferrer" : undefined}
         data-case-study={project.slug}
-        aria-describedby={open ? `case-study-${project.slug}` : undefined}
         // Adds the custom ↗ cursor on top of the inherited pill chrome.
         className={`${className} nomo-case-study-pill`}
         onMouseEnter={(e) => {
@@ -206,45 +202,8 @@ export function CaseStudyPill({
               </motion.div>
             )}
 
-            {open && (
-              <motion.div
-                id={`case-study-${project.slug}`}
-                role="tooltip"
-                className="double-stroke pointer-events-none fixed z-[100] w-[180px] origin-top-left rounded-[6px] bg-content p-2"
-                style={{
-                  left: x,
-                  top: y,
-                  translateX: TOOLTIP_OFFSET_X,
-                  translateY: TOOLTIP_OFFSET_Y,
-                }}
-                initial={{ opacity: 0, scale: 0.94 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.97 }}
-                transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
-                key="case-study-tooltip"
-              >
-                <div className="relative z-[1] flex flex-col gap-0.5">
-                  <div className="flex items-center gap-1">
-                    <h4 className="text-[11.5px] font-medium leading-tight text-fg">
-                      {project.title}
-                    </h4>
-                    {project.isProtected && (
-                      <Lock
-                        weight="fill"
-                        size={9}
-                        aria-label="Password protected"
-                        className="text-tertiary"
-                      />
-                    )}
-                  </div>
-                  {project.description && (
-                    <p className="line-clamp-2 text-[10.5px] leading-snug text-muted">
-                      {project.description}
-                    </p>
-                  )}
-                </div>
-              </motion.div>
-            )}
+            {/* Text tooltip removed — the cursor glyph + hero preview are
+                the entire hover affordance now. */}
           </AnimatePresence>,
           document.body
         )}
