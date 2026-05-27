@@ -17,7 +17,14 @@ const nextConfig: NextConfig = {
         hostname: "avatars.githubusercontent.com",
       },
     ],
-    formats: ["image/avif", "image/webp"],
+    // WebP first — Chrome's AVIF encoder over-smooths fine UI detail
+    // (small text, edges in screenshots). WebP keeps screenshots crisp;
+    // AVIF still serves to browsers that prefer it.
+    formats: ["image/webp", "image/avif"],
+    // Allow callers to opt into 92 (visibly sharper for screenshots),
+    // alongside the default 75 for cases where size matters more than
+    // pixel-perfect detail.
+    qualities: [75, 92],
   },
 };
 

@@ -32,6 +32,10 @@ export function SkeletonImage({
   wrapperClassName = "",
   showSkeleton = true,
   className = "",
+  // UI screenshots take a real hit at the default quality of 75 — bump
+  // to 92 so the transcoded webp/avif stays sharp. Callers can override
+  // for cases where bandwidth matters more than detail.
+  quality = 92,
   ...rest
 }: Props) {
   const [loaded, setLoaded] = useState(false);
@@ -57,6 +61,7 @@ export function SkeletonImage({
       )}
       <Image
         {...rest}
+        quality={quality}
         ref={imgRef}
         data-loaded={loaded ? "true" : "false"}
         onLoad={() => setLoaded(true)}
