@@ -81,30 +81,54 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
     />
   ) : null;
 
-  // Centered "Have a listen" CTA that appears on hover (desktop) and is
-  // always visible on touch. The backdrop-blur lifts the chip cleanly off
-  // the playing video underneath. Pointer-down stop prevents dnd-kit from
-  // claiming the click as a drag in owner mode.
+  // Centered "Have a listen" CTA + a soft diffusion bloom that fades in on
+  // hover. The bloom is a radial darken layer with its own backdrop-blur —
+  // together with the video's own hover blur they stack into a graduated
+  // "out of focus" feel rather than a single flat blur step.
+  const visibilityClass = isTouch
+    ? "opacity-100"
+    : "opacity-0 group-hover:opacity-100";
+
   const listenButton = (
-    <button
-      type="button"
-      aria-label={`Open ${ariaLabel} with audio`}
-      onPointerDown={(e) => e.stopPropagation()}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        openTheater();
-      }}
-      className={
-        "absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-2.5 rounded-full border border-white/15 bg-black/35 px-5 py-3 text-[14px] font-medium text-white shadow-[0_18px_44px_-16px_rgb(0_0_0_/_0.7)] backdrop-blur-md transition-[opacity,transform] duration-200 ease-out " +
-        (isTouch
-          ? "opacity-100"
-          : "opacity-0 group-hover:opacity-100")
-      }
-    >
-      <SpeakerHigh size={18} weight="fill" aria-hidden />
-      Have a listen
-    </button>
+    <>
+      {/* Diffusion layer — a soft radial scrim that strengthens the
+          backdrop-blur near the chip and tapers off toward the edges, so
+          the focus visibly settles on the CTA. */}
+      <div
+        aria-hidden
+        className={
+          "pointer-events-none absolute inset-0 z-[5] transition-opacity duration-300 ease-out " +
+          visibilityClass
+        }
+        style={{
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          background:
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.2) 45%, rgba(0,0,0,0) 75%)",
+          maskImage:
+            "radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0) 90%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0) 90%)",
+        }}
+      />
+      <button
+        type="button"
+        aria-label={`Open ${ariaLabel} with audio`}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openTheater();
+        }}
+        className={
+          "absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 scale-95 items-center gap-2.5 rounded-full border border-white/15 bg-black/35 px-5 py-3 text-[14px] font-medium text-white shadow-[0_18px_44px_-16px_rgb(0_0_0_/_0.7)] backdrop-blur-xl transition-[opacity,transform,backdrop-filter] duration-300 ease-out group-hover:scale-100 " +
+          visibilityClass
+        }
+      >
+        <SpeakerHigh size={18} weight="fill" aria-hidden />
+        Have a listen
+      </button>
+    </>
   );
 
   // Touch + we have a poster: render the still by default. Tap the poster
@@ -126,8 +150,8 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
               fill
               sizes={HERO_SIZES}
               // Touch shows the listen chip permanently, so blur the poster
-              // permanently too — matches the hover-blur on desktop tiles.
-              className="object-cover blur-[2px]"
+              // permanently too — matches the diffusion treatment on desktop.
+              className="scale-[1.02] object-cover blur-[3px]"
               draggable={false}
             />
           </button>
@@ -201,7 +225,7 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
             e.stopPropagation();
             openTheater();
           }}
-          className="h-full w-full object-cover transition-[filter] duration-200 ease-out group-hover:blur-[2px]"
+          className="h-full w-full object-cover transition-[filter,transform] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.02] group-hover:blur-[3px]"
         />
         {listenButton}
       </div>
