@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { HomeLogoLink } from "@/components/home-logo-link";
+import { Konami } from "@/components/konami";
 import { PageTransition } from "@/components/page-transition";
 import "./globals.css";
 
@@ -65,6 +66,7 @@ export default function RootLayout({
             >
               <PageTransition>{children}</PageTransition>
             </div>
+            <Konami />
           </div>
         </div>
       </body>
