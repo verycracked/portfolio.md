@@ -7,6 +7,7 @@ import { NomoEditor } from "@/components/nomo-editor";
 import { FadeIn } from "@/components/fade-in";
 import { Gallery } from "@/components/gallery";
 import { HomeDropzone } from "@/components/home-dropzone";
+import { HomeScene } from "@/components/home-scene";
 import type { GalleryGroup } from "@/components/gallery-types";
 import type { ProjectSummary } from "@/lib/case-study";
 
@@ -107,10 +108,18 @@ export default async function Home({
   return (
     <FadeIn>
       {owner && !previewing && <HomeDropzone />}
-      <NomoMarkdown
-        body={doc.body}
-        context={{ avatarUrl: settings?.avatarUrl ?? null, caseStudies }}
-      />
+      {/* Markdown column + WebGL scene side-by-side on desktop. The
+          scene drops below the markdown on tablet and is hidden on phone
+          (the WebGL load isn't worth it at that width). */}
+      <div className="flex flex-col gap-10 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-start md:gap-12">
+        <NomoMarkdown
+          body={doc.body}
+          context={{ avatarUrl: settings?.avatarUrl ?? null, caseStudies }}
+        />
+        <div className="hidden md:block">
+          <HomeScene />
+        </div>
+      </div>
       <section id="portfolio" className="mt-16 scroll-mt-8">
         <Gallery
           initial={galleryGroups}
