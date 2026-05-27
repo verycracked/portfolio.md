@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "pub-4dad6c6f13224749b538f8b529c19047.r2.dev",
       },
+      // GitHub avatars — the default `OWNER_AVATAR_URL` points here.
+      {
+        protocol: "https",
+        hostname: "avatars.githubusercontent.com",
+      },
     ],
     formats: ["image/avif", "image/webp"],
   },
