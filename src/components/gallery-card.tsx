@@ -9,8 +9,7 @@ import {
   DotsSixVertical,
   Image as ImageIcon,
   Lock,
-  SpeakerHigh,
-  SpeakerSlash,
+  Play,
   X,
 } from "@phosphor-icons/react/dist/ssr";
 import { HeroVideo } from "@/components/hero-video";
@@ -235,11 +234,11 @@ export function SortableGalleryCard({
               : "bg-content/85")
           }
         >
-          {project.hasAudio ? (
-            <SpeakerHigh size={13} weight="fill" aria-hidden />
-          ) : (
-            <SpeakerSlash size={13} weight="bold" aria-hidden />
-          )}
+          <Play
+            size={13}
+            weight={project.hasAudio ? "fill" : "regular"}
+            aria-hidden
+          />
         </button>
       )}
     </div>
