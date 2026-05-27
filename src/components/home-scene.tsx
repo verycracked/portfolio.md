@@ -44,7 +44,8 @@ export function HomeScene() {
           projectId={PROJECT_ID}
           width={`${size.w}px`}
           height={`${size.h}px`}
-          scale={1}
+          // Scene content rendered at half size inside the canvas.
+          scale={0.5}
           dpi={1.5}
           sdkUrl={SDK_URL}
         />
