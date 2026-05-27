@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { HomeLogoLink } from "@/components/home-logo-link";
 import { PageTransition } from "@/components/page-transition";
 import "./globals.css";
 
@@ -56,16 +56,13 @@ export default function RootLayout({
         <div className="fixed inset-2 z-0">
           <div className="double-stroke relative flex h-full flex-col overflow-hidden rounded-[2px] bg-content">
             {/* Top-leftmost wordmark, anchored to the card so it stays
-                visible while the inner area scrolls. */}
-            <Link
-              href="/"
-              aria-label="portfolio.md home"
-              className="absolute left-6 top-6 z-20 hidden h-6 w-7 items-center justify-center md:inline-flex"
+                visible while the inner area scrolls. Doubles as a scroll-
+                to-top control when already on `/`. */}
+            <HomeLogoLink />
+            <div
+              id="app-scroll"
+              className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/vc-logo.svg" alt="" className="h-full w-full" />
-            </Link>
-            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
               <PageTransition>{children}</PageTransition>
             </div>
           </div>
