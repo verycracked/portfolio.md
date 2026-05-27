@@ -55,7 +55,7 @@ export default function RootLayout({
             a flex column reserves space for the (fixed) chrome and gives
             the remaining area to a single scroll region. */}
         <div className="fixed inset-2 z-0">
-          <div className="double-stroke relative flex h-full flex-col overflow-hidden rounded-[2px] bg-content">
+          <div className="page-dissolve double-stroke relative flex h-full flex-col overflow-hidden rounded-[2px] bg-content">
             {/* Top-leftmost wordmark, anchored to the card so it stays
                 visible while the inner area scrolls. Doubles as a scroll-
                 to-top control when already on `/`. */}

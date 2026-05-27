@@ -198,6 +198,37 @@ select {
   animation-delay: var(--reveal-delay, 0ms);
 }
 
+/* First-paint page dissolve. Applied once at the layout level around the
+ * inner scroll container so a hard refresh or cold load fades the entire
+ * page in. Combines a longer opacity curve with a brief blur unblur so it
+ * reads as a soft "dissolve into place" rather than a flat opacity fade.
+ * Client-side route transitions are handled separately by <PageTransition>
+ * — this only fires when the layout itself is freshly mounted. */
+@keyframes page-dissolve-in {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.page-dissolve {
+  opacity: 0;
+  animation: page-dissolve-in 900ms var(--ease-out-quart) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-dissolve {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* Refined error nudge — 3 small horizontal kicks, no overshoot. */
 @keyframes nudge-x {
   0%, 100% { transform: translateX(0); }
