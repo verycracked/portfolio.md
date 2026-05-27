@@ -252,6 +252,50 @@ select {
   opacity: 1;
 }
 
+/* Loading skeleton — sits behind images / video posters until they finish
+ * loading. A diagonal sheen pans across a subtle base gradient so the
+ * placeholder reads as "working" rather than just "broken / missing." */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.skeleton-shimmer {
+  background-color: var(--hover);
+  background-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 30%,
+    rgba(255, 255, 255, 0.045) 45%,
+    rgba(255, 255, 255, 0.07) 50%,
+    rgba(255, 255, 255, 0.045) 55%,
+    transparent 70%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+  }
+}
+
+/* Smooth opacity fade applied to images / posters once their `onLoad`
+ * fires and they're marked data-loaded="true". Starts hidden so the
+ * skeleton underneath remains visible until the bytes are in. */
+.media-fade {
+  opacity: 0;
+  transition: opacity 380ms var(--ease-out-quart);
+}
+.media-fade[data-loaded="true"] {
+  opacity: 1;
+}
+
 /* Smooth interactive transitions */
 a, button, input, textarea, select {
   transition-property: color, background-color, border-color, opacity;

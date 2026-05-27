@@ -38,6 +38,9 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props
   const [isTouch, setIsTouch] = useState<boolean | null>(null);
   // Touch + has-poster: stays on the poster <Image> until tapped.
   const [activated, setActivated] = useState(false);
+  // Mirrors HeroFrame's pattern: skeleton stays visible until the poster
+  // image's onLoad fires.
+  const [posterLoaded, setPosterLoaded] = useState(false);
   // When true, the theater modal is open.
   const [theaterOpen, setTheaterOpen] = useState(false);
 
@@ -143,15 +146,24 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props
             onClick={() => setActivated(true)}
             className="relative block h-full w-full"
           >
+            <div
+              aria-hidden
+              className={
+                "skeleton-shimmer absolute inset-0 transition-opacity duration-500 " +
+                (posterLoaded ? "opacity-0" : "opacity-100")
+              }
+            />
             <Image
               src={posterUrl}
               alt={ariaLabel}
               fill
               sizes={HERO_SIZES}
+              data-loaded={posterLoaded ? "true" : "false"}
+              onLoad={() => setPosterLoaded(true)}
               // Blur only when the Play CTA is overlaid; otherwise leave
               // the poster crisp so it reads as a real still image.
               className={
-                "object-cover " + (hasAudio ? "blur-[3px]" : "")
+                "media-fade object-cover " + (hasAudio ? "blur-[3px]" : "")
               }
               draggable={false}
             />

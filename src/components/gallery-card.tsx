@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -271,6 +271,11 @@ function HeroFrame({
   protected?: boolean;
   priority?: boolean;
 }) {
+  // Per-tile load state so the skeleton can fade out exactly when this
+  // tile's image is ready. Videos manage their own poster timing inside
+  // HeroVideo, so we only need this for the image branch.
+  const [imgLoaded, setImgLoaded] = useState(false);
+
   return (
     <div className="relative aspect-[16/10] flex-1 overflow-hidden rounded-[6px] border border-border bg-hover sm:aspect-auto">
       {url ? (
@@ -284,17 +289,28 @@ function HeroFrame({
             hasAudio={hasAudio}
           />
         ) : (
-          // Next/Image proxies through the Vercel image optimizer so the
-          // browser receives a webp/avif scaled to the actual on-screen
-          // pixel dimensions instead of the raw multi-MB PNG.
-          <Image
-            src={url}
-            alt={title}
-            fill
-            sizes={HERO_SIZES}
-            priority={priority}
-            className="object-cover"
-          />
+          <>
+            {/* Shimmering skeleton underneath the image. Stays animated
+                until the image's onLoad fires, then fades out behind the
+                now-visible photo. */}
+            <div
+              aria-hidden
+              className={
+                "skeleton-shimmer absolute inset-0 transition-opacity duration-500 " +
+                (imgLoaded ? "opacity-0" : "opacity-100")
+              }
+            />
+            <Image
+              src={url}
+              alt={title}
+              fill
+              sizes={HERO_SIZES}
+              priority={priority}
+              data-loaded={imgLoaded ? "true" : "false"}
+              onLoad={() => setImgLoaded(true)}
+              className="media-fade object-cover"
+            />
+          </>
         )
       ) : (
         // Empty hero — soft gradient + title placeholder so a tile without
