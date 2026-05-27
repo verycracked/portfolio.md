@@ -60,7 +60,6 @@ export function Avatar({ initialUrl, editable }: Props) {
           alt=""
           fill
           sizes="64px"
-          wrapperClassName="absolute inset-0"
           className="object-cover"
         />
       </div>
@@ -90,7 +89,6 @@ export function Avatar({ initialUrl, editable }: Props) {
             alt=""
             fill
             sizes="64px"
-            wrapperClassName="absolute inset-0"
             className="object-cover"
           />
         ) : (

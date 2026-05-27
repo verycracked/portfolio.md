@@ -290,7 +290,6 @@ function HeroFrame({
             fill
             sizes={HERO_SIZES}
             priority={priority}
-            wrapperClassName="absolute inset-0"
             className="object-cover"
           />
         )

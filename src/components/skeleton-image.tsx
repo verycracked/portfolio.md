@@ -4,23 +4,29 @@ import Image, { type ImageProps } from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 type Props = Omit<ImageProps, "onLoad"> & {
-  /** Optional extra classes for the wrapper that hosts the skeleton. */
+  /** Extra classes for the wrapper that hosts the skeleton. Use this to
+   *  set sizing when not using `fill` mode. */
   wrapperClassName?: string;
-  /** When false, skips the skeleton entirely (renders the bare image).
-   *  Useful for tiny avatars where the placeholder is more noise than
-   *  signal. Defaults to true. */
+  /** When false, skips the skeleton entirely. Useful for tiny avatars. */
   showSkeleton?: boolean;
 };
 
 /**
  * Drop-in replacement for `<Image>` that crossfades from a shimmering
- * skeleton to the decoded photo. Handles the cached-image edge case
- * (browser flips `img.complete = true` before React's `onLoad` attaches),
- * so the fade-in never gets stuck on a hidden image.
+ * skeleton to the decoded photo.
  *
- * Wrapper is `position: relative` so it can host the absolute skeleton —
- * pass `fill` on the underlying Image and a sized wrapper via
- * `wrapperClassName` (e.g. `aspect-[16/10]` or a fixed h/w).
+ *  • Cached-image-safe — if the underlying <img> finished decoding before
+ *    React's onLoad listener attached, we probe `img.complete` in an
+ *    effect and flip the load state immediately. Prevents the skeleton
+ *    from getting stuck on top of an already-painted image.
+ *  • Sized via the wrapper — the wrapper is a `<div>` with `relative
+ *    h-full w-full` by default so `<Image fill>` always sees a parent
+ *    with a real bounding box (Next/Image emits a "height of 0" warning
+ *    if its immediate parent collapses, which is what happened when the
+ *    wrapper was a `<span>` with `display: block` + `position: absolute`).
+ *
+ * Pair with a sized parent — pass `fill` on the Image and let the parent
+ * (e.g. an `aspect-[16/10]` or `size-16` container) drive the dimensions.
  */
 export function SkeletonImage({
   wrapperClassName = "",
@@ -31,9 +37,6 @@ export function SkeletonImage({
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
-  // Cached-image catch: if the underlying <img> finished decoding before
-  // React's listener attached, no `onLoad` is fired and we'd otherwise
-  // keep the skeleton up indefinitely.
   useEffect(() => {
     const el = imgRef.current;
     if (el && el.complete && el.naturalWidth > 0) {
@@ -42,9 +45,9 @@ export function SkeletonImage({
   }, []);
 
   return (
-    <span className={`relative block ${wrapperClassName}`}>
+    <div className={`relative h-full w-full ${wrapperClassName}`}>
       {showSkeleton && (
-        <span
+        <div
           aria-hidden
           className={
             "skeleton-shimmer absolute inset-0 transition-opacity duration-500 " +
@@ -60,6 +63,6 @@ export function SkeletonImage({
         onError={() => setLoaded(true)}
         className={`media-fade ${className}`}
       />
-    </span>
+    </div>
   );
 }
