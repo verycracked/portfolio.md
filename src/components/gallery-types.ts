@@ -9,9 +9,12 @@ export type GalleryProject = {
   posterUrl: string | null;
   /** Owner opted-in to expose "Play" CTA + theater modal. Off by default. */
   hasAudio: boolean;
+  /** Owner opted-in to make the homepage tile clickable even without
+   *  children — useful for stand-alone projects that have a write-up. */
+  isOpenable: boolean;
   isProtected: boolean;
-  /** Number of sub-projects under this tile. >0 means the visitor card
-   *  links through to the detail page; 0 stays non-interactive. */
+  /** Number of sub-projects under this tile. childCount > 0 OR isOpenable
+   *  makes the visitor card link to the detail page. */
   childCount: number;
   /** 1–4 — number of grid columns this card occupies horizontally. */
   colSpan: number;

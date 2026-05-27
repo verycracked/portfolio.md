@@ -43,6 +43,7 @@ export default async function ProjectDetail({
           heroImageUrl: true,
           posterUrl: true,
           hasAudio: true,
+          isOpenable: true,
           passwordHash: true,
           colSpan: true,
           rowSpan: true,

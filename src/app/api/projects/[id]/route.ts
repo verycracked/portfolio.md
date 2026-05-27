@@ -22,6 +22,8 @@ type Body = {
   parentId?: string | null;
   /** When true, surfaces the "Play" CTA + theater modal on the tile. */
   hasAudio?: boolean;
+  /** Force the homepage tile to be clickable even with no sub-projects. */
+  isOpenable?: boolean;
 };
 
 function slugify(input: string) {
@@ -60,6 +62,7 @@ export async function PUT(
   if (data.groupId !== undefined) update.groupId = data.groupId;
   if (data.parentId !== undefined) update.parentId = data.parentId;
   if (data.hasAudio !== undefined) update.hasAudio = Boolean(data.hasAudio);
+  if (data.isOpenable !== undefined) update.isOpenable = Boolean(data.isOpenable);
 
   if (data.password !== undefined) {
     update.passwordHash = data.password ? hashPassword(data.password) : null;

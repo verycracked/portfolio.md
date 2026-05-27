@@ -158,6 +158,27 @@ export function ChildGallery({
     }
   };
 
+  const handleToggleOpenable = async (id: string) => {
+    const project = projectsRef.current.find((p) => p.id === id);
+    if (!project) return;
+    const next = !project.isOpenable;
+    setProjects((cur) =>
+      cur.map((p) => (p.id === id ? { ...p, isOpenable: next } : p))
+    );
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isOpenable: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setProjects((cur) =>
+        cur.map((p) => (p.id === id ? { ...p, isOpenable: !next } : p))
+      );
+    }
+  };
+
   // Visitor view — static grid, no chrome.
   if (!editable) {
     if (projects.length === 0) return null;
@@ -200,6 +221,7 @@ export function ChildGallery({
               onResize={(c, r) => handleResize(p.id, c, r)}
               onResizeCommit={() => handleResizeCommit(p.id)}
               onToggleAudio={() => void handleToggleAudio(p.id)}
+              onToggleOpenable={() => void handleToggleOpenable(p.id)}
               spanClass={`animate-fade-rise ${spanClass(p.colSpan, p.rowSpan)}`}
               revealDelayMs={i * 60}
             />

@@ -39,6 +39,10 @@ model Project {
   // the on-tile "Play" CTA and the theater modal entry point. Defaults to
   // false so silent screen recordings stay calm (hover preview only).
   hasAudio      Boolean         @default(false)
+  // Opt-in: visitor card on the homepage becomes a link to the project's
+  // detail page even when it has no children. Useful for stand-alone
+  // projects that have a meaningful write-up but no sub-projects.
+  isOpenable    Boolean         @default(false)
   sourceUrl     String?
   // HMAC hash of the visitor password. null = public. owner always has access.
   passwordHash  String?

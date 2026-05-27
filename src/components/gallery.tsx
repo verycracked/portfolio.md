@@ -287,6 +287,39 @@ export function Gallery({
     }
   };
 
+  const handleToggleOpenable = async (id: string) => {
+    const project = groupsRef.current
+      .flatMap((g) => g.projects)
+      .find((p) => p.id === id);
+    if (!project) return;
+    const next = !project.isOpenable;
+    setGroups((cur) =>
+      cur.map((g) => ({
+        ...g,
+        projects: g.projects.map((p) =>
+          p.id === id ? { ...p, isOpenable: next } : p
+        ),
+      }))
+    );
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isOpenable: next }),
+      });
+      if (!res.ok) throw new Error(`save failed (${res.status})`);
+    } catch {
+      setGroups((cur) =>
+        cur.map((g) => ({
+          ...g,
+          projects: g.projects.map((p) =>
+            p.id === id ? { ...p, isOpenable: !next } : p
+          ),
+        }))
+      );
+    }
+  };
+
   const handleProjectDelete = async (id: string) => {
     const snapshot = groups;
     setGroups((cur) =>
@@ -397,6 +430,7 @@ export function Gallery({
               onProjectResize={handleProjectResize}
               onProjectResizeCommit={projectsResizeCommitGroup}
               onProjectToggleAudio={(id) => void handleToggleAudio(id)}
+              onProjectToggleOpenable={(id) => void handleToggleOpenable(id)}
             />
           ))}
         </div>

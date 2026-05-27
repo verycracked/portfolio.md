@@ -6,6 +6,7 @@ import { useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  ArrowSquareOut,
   ArrowUpRight,
   CornersOut,
   DotsSixVertical,
@@ -50,7 +51,10 @@ export function GalleryCard({
     revealDelayMs !== undefined
       ? ({ ["--reveal-delay" as string]: `${revealDelayMs}ms` } as React.CSSProperties)
       : undefined;
-  const hasChildren = project.childCount > 0;
+  // A tile is clickable when it has children OR the owner explicitly
+  // opted in to a detail page (e.g. a stand-alone project with a
+  // meaningful write-up but no sub-projects).
+  const clickable = project.childCount > 0 || project.isOpenable;
 
   const body = (
     <CardShell>
@@ -63,12 +67,12 @@ export function GalleryCard({
         priority={priority}
         // When the tile is clickable, surface an Open CTA on hover using
         // the same diffusion-blur treatment as the Play CTA.
-        openOverlay={hasChildren}
+        openOverlay={clickable}
       />
     </CardShell>
   );
 
-  if (hasChildren) {
+  if (clickable) {
     return (
       <Link
         href={`/projects/${project.slug}`}
@@ -96,6 +100,8 @@ type OwnerProps = CommonProps & {
   onResizeCommit: () => void;
   /** Flip the per-tile "has audio worth surfacing" flag. */
   onToggleAudio: () => void;
+  /** Flip the per-tile "show detail page" flag. */
+  onToggleOpenable: () => void;
 };
 
 /**
@@ -113,6 +119,7 @@ export function SortableGalleryCard({
   onResize,
   onResizeCommit,
   onToggleAudio,
+  onToggleOpenable,
 }: OwnerProps) {
   const sortable = useSortable({
     id: project.id,
@@ -120,7 +127,7 @@ export function SortableGalleryCard({
   });
   const cellRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
-  const hasChildren = project.childCount > 0;
+  const clickable = project.childCount > 0 || project.isOpenable;
 
   const setRefs = (node: HTMLDivElement | null) => {
     cellRef.current = node;
@@ -205,16 +212,16 @@ export function SortableGalleryCard({
       onClick={(e) => {
         // dnd-kit only fires this when the gesture stayed within the 4px
         // activation distance — i.e. a real click, not a drag. Use it to
-        // route into the project detail page for tiles with children.
-        if (!hasChildren) return;
+        // route into the project detail page for clickable tiles.
+        if (!clickable) return;
         const target = e.target as HTMLElement;
         // Skip if the click landed on an interactive chrome button (X /
-        // resize / audio toggle) — those have their own handlers.
+        // resize / audio / open toggle) — those have their own handlers.
         if (target.closest("button")) return;
         router.push(`/projects/${project.slug}`);
       }}
       className={`reorder-card group relative select-none ${spanClass} ${
-        hasChildren ? "cursor-pointer" : ""
+        clickable ? "cursor-pointer" : ""
       }`}
     >
       <CardShell>
@@ -286,6 +293,44 @@ export function SortableGalleryCard({
           />
         </button>
       )}
+      {/* Openable toggle — makes the homepage tile clickable even without
+          sub-projects, so the visitor lands on the project detail page.
+          Auto-on (and disabled) when the tile already has children. Slides
+          right when the audio toggle is also present so they don't stack. */}
+      <button
+        type="button"
+        aria-label={
+          project.isOpenable
+            ? "Hide detail page"
+            : "Make this tile open to a detail page"
+        }
+        aria-pressed={project.isOpenable}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleOpenable();
+        }}
+        title={
+          project.childCount > 0
+            ? "Always openable (has sub-projects)"
+            : project.isOpenable
+              ? "Open page enabled — click to disable"
+              : "Click to enable open page"
+        }
+        disabled={project.childCount > 0}
+        className={
+          "absolute bottom-3 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 disabled:cursor-default disabled:hover:text-muted " +
+          (project.heroImageUrl && isVideoUrl(project.heroImageUrl)
+            ? "left-12 "
+            : "left-3 ") +
+          (project.isOpenable || project.childCount > 0
+            ? "bg-fg/15 text-fg"
+            : "bg-content/85")
+        }
+      >
+        <ArrowSquareOut size={12} weight="bold" aria-hidden />
+      </button>
     </div>
   );
 }
