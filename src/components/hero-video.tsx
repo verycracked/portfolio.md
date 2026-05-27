@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { SpeakerHigh } from "@phosphor-icons/react/dist/ssr";
+import { Play } from "@phosphor-icons/react/dist/ssr";
 import { TheaterModal } from "@/components/theater-modal";
 
 const HERO_SIZES = "(min-width: 640px) 50vw, 100vw";
@@ -113,7 +113,7 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
       />
       <button
         type="button"
-        aria-label={`Open ${ariaLabel} with audio`}
+        aria-label={`Play ${ariaLabel} with audio`}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.preventDefault();
@@ -121,12 +121,12 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
           openTheater();
         }}
         className={
-          "absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 scale-95 items-center gap-2.5 rounded-full border border-white/15 bg-black/35 px-5 py-3 text-[14px] font-medium text-white shadow-[0_18px_44px_-16px_rgb(0_0_0_/_0.7)] backdrop-blur-xl transition-[opacity,transform,backdrop-filter] duration-300 ease-out group-hover:scale-100 " +
+          "absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 scale-95 items-center gap-2 text-[15px] font-medium text-white drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)] transition-[opacity,transform] duration-300 ease-out hover:text-white group-hover:scale-100 " +
           visibilityClass
         }
       >
-        <SpeakerHigh size={18} weight="fill" aria-hidden />
-        Have a listen
+        <Play size={18} weight="fill" aria-hidden />
+        Play
       </button>
     </>
   );
