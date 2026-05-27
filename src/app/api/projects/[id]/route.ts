@@ -16,6 +16,10 @@ type Body = {
   /** Bento sizing on /portfolio. Clamped to 1..4 / 1..2. */
   colSpan?: number;
   rowSpan?: number;
+  /** Optional new section for the tile. */
+  groupId?: string;
+  /** When true, surfaces the "Play" CTA + theater modal on the tile. */
+  hasAudio?: boolean;
 };
 
 function slugify(input: string) {
@@ -51,6 +55,8 @@ export async function PUT(
   if (data.rowSpan !== undefined) {
     update.rowSpan = Math.min(2, Math.max(1, Math.round(data.rowSpan)));
   }
+  if (data.groupId !== undefined) update.groupId = data.groupId;
+  if (data.hasAudio !== undefined) update.hasAudio = Boolean(data.hasAudio);
 
   if (data.password !== undefined) {
     update.passwordHash = data.password ? hashPassword(data.password) : null;

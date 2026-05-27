@@ -253,6 +253,40 @@ export function Gallery({
       }))
     );
 
+  const handleToggleAudio = async (id: string) => {
+    const project = groupsRef.current
+      .flatMap((g) => g.projects)
+      .find((p) => p.id === id);
+    if (!project) return;
+    const next = !project.hasAudio;
+    // Optimistic flip — roll back on server error.
+    setGroups((cur) =>
+      cur.map((g) => ({
+        ...g,
+        projects: g.projects.map((p) =>
+          p.id === id ? { ...p, hasAudio: next } : p
+        ),
+      }))
+    );
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ hasAudio: next }),
+      });
+      if (!res.ok) throw new Error(`save failed (${res.status})`);
+    } catch {
+      setGroups((cur) =>
+        cur.map((g) => ({
+          ...g,
+          projects: g.projects.map((p) =>
+            p.id === id ? { ...p, hasAudio: !next } : p
+          ),
+        }))
+      );
+    }
+  };
+
   const handleProjectDelete = async (id: string) => {
     const snapshot = groups;
     setGroups((cur) =>
@@ -362,6 +396,7 @@ export function Gallery({
               onProjectDelete={(id) => void handleProjectDelete(id)}
               onProjectResize={handleProjectResize}
               onProjectResizeCommit={projectsResizeCommitGroup}
+              onProjectToggleAudio={(id) => void handleToggleAudio(id)}
             />
           ))}
         </div>

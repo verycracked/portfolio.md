@@ -7,6 +7,8 @@ export type GalleryProject = {
   /** First-frame still for videos. Null for image heroes and for legacy
    *  video uploads that predate poster extraction. */
   posterUrl: string | null;
+  /** Owner opted-in to expose "Play" CTA + theater modal. Off by default. */
+  hasAudio: boolean;
   isProtected: boolean;
   /** 1–4 — number of grid columns this card occupies horizontally. */
   colSpan: number;

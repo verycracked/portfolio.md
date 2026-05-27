@@ -9,6 +9,8 @@ import {
   DotsSixVertical,
   Image as ImageIcon,
   Lock,
+  SpeakerHigh,
+  SpeakerSlash,
   X,
 } from "@phosphor-icons/react/dist/ssr";
 import { HeroVideo } from "@/components/hero-video";
@@ -47,6 +49,7 @@ export function GalleryCard({
         <HeroFrame
           url={project.heroImageUrl}
           posterUrl={project.posterUrl}
+          hasAudio={project.hasAudio}
           title={project.title}
           protected={project.isProtected}
           priority={priority}
@@ -62,6 +65,8 @@ type OwnerProps = CommonProps & {
   onResize: (colSpan: number, rowSpan: number) => void;
   /** Persist the current size to the server (called on pointer release). */
   onResizeCommit: () => void;
+  /** Flip the per-tile "has audio worth surfacing" flag. */
+  onToggleAudio: () => void;
 };
 
 /**
@@ -78,6 +83,7 @@ export function SortableGalleryCard({
   onDelete,
   onResize,
   onResizeCommit,
+  onToggleAudio,
 }: OwnerProps) {
   const sortable = useSortable({
     id: project.id,
@@ -171,6 +177,7 @@ export function SortableGalleryCard({
         <HeroFrame
           url={project.heroImageUrl}
           posterUrl={project.posterUrl}
+          hasAudio={project.hasAudio}
           title={project.title}
           protected={project.isProtected}
           priority={priority}
@@ -207,6 +214,34 @@ export function SortableGalleryCard({
       >
         <CornersOut size={13} weight="bold" aria-hidden />
       </button>
+      {/* Audio-enabled toggle — only relevant for video heroes. Pressed
+          state (highlighted) means the "Play" CTA + theater modal are
+          surfaced to visitors. */}
+      {project.heroImageUrl && isVideoUrl(project.heroImageUrl) && (
+        <button
+          type="button"
+          aria-label={project.hasAudio ? "Hide audio CTA" : "Enable audio CTA"}
+          aria-pressed={project.hasAudio}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleAudio();
+          }}
+          className={
+            "absolute bottom-3 left-3 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
+            (project.hasAudio
+              ? "bg-fg/15 text-fg"
+              : "bg-content/85")
+          }
+        >
+          {project.hasAudio ? (
+            <SpeakerHigh size={13} weight="fill" aria-hidden />
+          ) : (
+            <SpeakerSlash size={13} weight="bold" aria-hidden />
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -225,12 +260,14 @@ function CardShell({ children }: { children: React.ReactNode }) {
 function HeroFrame({
   url,
   posterUrl,
+  hasAudio = false,
   title,
   protected: isProtected,
   priority = false,
 }: {
   url: string | null;
   posterUrl?: string | null;
+  hasAudio?: boolean;
   title: string;
   protected?: boolean;
   priority?: boolean;
@@ -245,6 +282,7 @@ function HeroFrame({
             src={url}
             posterUrl={posterUrl ?? null}
             ariaLabel={title}
+            hasAudio={hasAudio}
           />
         ) : (
           // Next/Image proxies through the Vercel image optimizer so the

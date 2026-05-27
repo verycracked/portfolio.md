@@ -11,6 +11,9 @@ type Props = {
   src: string;
   posterUrl?: string | null;
   ariaLabel: string;
+  /** Surfaces the "Play" CTA + theater modal entry point. Owners flip this
+   *  per-tile to mark videos that have meaningful audio. */
+  hasAudio?: boolean;
 };
 
 /**
@@ -29,7 +32,7 @@ type Props = {
  * The expand chip is the universal "play with audio" affordance — present
  * on every video regardless of whether we know it has an audio track.
  */
-export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
+export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   // null until matchMedia runs — avoids SSR/CSR drift on the autoplay attr.
   const [isTouch, setIsTouch] = useState<boolean | null>(null);
@@ -81,19 +84,16 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
     />
   ) : null;
 
-  // Centered "Have a listen" CTA + a soft diffusion bloom that fades in on
-  // hover. The bloom is a radial darken layer with its own backdrop-blur —
-  // together with the video's own hover blur they stack into a graduated
-  // "out of focus" feel rather than a single flat blur step.
+  // Diffusion bloom + "Play" CTA — only rendered when the owner has flagged
+  // this video as having meaningful audio.
   const visibilityClass = isTouch
     ? "opacity-100"
     : "opacity-0 group-hover:opacity-100";
 
-  const listenButton = (
+  const listenButton = hasAudio ? (
     <>
-      {/* Diffusion layer — a soft radial scrim that strengthens the
-          backdrop-blur near the chip and tapers off toward the edges, so
-          the focus visibly settles on the CTA. */}
+      {/* Diffusion layer — radial scrim with backdrop-blur that strengthens
+          near the CTA and tapers off, so focus settles on the button. */}
       <div
         aria-hidden
         className={
@@ -121,7 +121,7 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
           openTheater();
         }}
         className={
-          "absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 scale-95 items-center gap-2 text-[15px] font-medium text-white drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)] transition-[opacity,transform] duration-300 ease-out hover:text-white group-hover:scale-100 " +
+          "absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 text-[15px] font-medium text-white drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)] transition-opacity duration-300 ease-out hover:text-white " +
           visibilityClass
         }
       >
@@ -129,11 +129,11 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
         Play
       </button>
     </>
-  );
+  ) : null;
 
   // Touch + we have a poster: render the still by default. Tap the poster
-  // to mount the inline <video>; tap the expand chip to go straight to
-  // theater (which is where you'd actually hear audio).
+  // to mount the inline <video>; tap the Play CTA (when shown) to go
+  // straight to the theater where audio plays.
   if (isTouch && posterUrl && !activated) {
     return (
       <>
@@ -149,9 +149,11 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
               alt={ariaLabel}
               fill
               sizes={HERO_SIZES}
-              // Touch shows the listen chip permanently, so blur the poster
-              // permanently too — matches the diffusion treatment on desktop.
-              className="scale-[1.02] object-cover blur-[3px]"
+              // Blur only when the Play CTA is overlaid; otherwise leave
+              // the poster crisp so it reads as a real still image.
+              className={
+                "object-cover " + (hasAudio ? "blur-[3px]" : "")
+              }
               draggable={false}
             />
           </button>
@@ -213,19 +215,22 @@ export function HeroVideo({ src, posterUrl, ariaLabel }: Props) {
             const p = v.play();
             if (p && typeof p.catch === "function") p.catch(() => undefined);
           }}
-          // Desktop: click anywhere on the tile opens the theater so the
-          // viewer can hear audio. Touch: tap toggles inline playback —
-          // they have the explicit "Audio" chip to enter theater.
+          // Desktop: click opens theater only when the owner flagged the
+          // video as having audio. Touch: tap toggles inline playback.
           onClick={(e) => {
             if (isTouch) {
               togglePlay();
               return;
             }
+            if (!hasAudio) return;
             e.preventDefault();
             e.stopPropagation();
             openTheater();
           }}
-          className="h-full w-full object-cover transition-[filter,transform] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.02] group-hover:blur-[3px]"
+          className={
+            "h-full w-full object-cover transition-[filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
+            (hasAudio ? "group-hover:blur-[3px]" : "")
+          }
         />
         {listenButton}
       </div>

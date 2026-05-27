@@ -35,6 +35,10 @@ model Project {
   // time. Used as the <video poster> attribute and as the standalone image
   // on touch devices where we don't autoplay.
   posterUrl     String?
+  // True when the hero video has meaningful audio worth surfacing — gates
+  // the on-tile "Play" CTA and the theater modal entry point. Defaults to
+  // false so silent screen recordings stay calm (hover preview only).
+  hasAudio      Boolean         @default(false)
   sourceUrl     String?
   // HMAC hash of the visitor password. null = public. owner always has access.
   passwordHash  String?
