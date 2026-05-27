@@ -5,11 +5,17 @@ import { useRouter } from "next/navigation";
 import { Plus, UploadSimple } from "@phosphor-icons/react/dist/ssr";
 import { MEDIA_ACCEPT } from "@/lib/media";
 
-type Props = {
-  /** Group ID the new tile should land in. Required so uploads scope to
-   *  the section that surfaced this tile. */
-  groupId: string;
-};
+type Props =
+  | {
+      /** Top-level upload — new tile lands in this group on the homepage. */
+      groupId: string;
+      parentId?: never;
+    }
+  | {
+      /** Sub-project upload — new tile becomes a child of this project. */
+      parentId: string;
+      groupId?: never;
+    };
 
 /**
  * Owner-only "add" tile that sits at the end of each section's grid.
@@ -19,7 +25,11 @@ type Props = {
  *    while a drag is over it.
  *  • Click "New" — creates an empty Untitled tile and routes to its editor.
  */
-export function NewTile({ groupId }: Props) {
+export function NewTile(props: Props) {
+  const { groupId, parentId } = props;
+  // Whichever id was supplied flows into both upload-and-create and the
+  // blank-create handlers below. The API accepts one or the other.
+  const target = parentId ? { parentId } : { groupId };
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -64,8 +74,7 @@ export function NewTile({ groupId }: Props) {
           body: JSON.stringify({
             title: "Untitled",
             heroImageUrl: url,
-            posterUrl,
-            groupId,
+            ...target,
           }),
         });
         if (!proj.ok) {
@@ -154,7 +163,7 @@ export function NewTile({ groupId }: Props) {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title: "Untitled project", groupId }),
+        body: JSON.stringify({ title: "Untitled project", ...target }),
       });
       if (!res.ok) return;
       const project = (await res.json()) as { id: string };

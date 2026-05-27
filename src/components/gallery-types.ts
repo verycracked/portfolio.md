@@ -10,6 +10,9 @@ export type GalleryProject = {
   /** Owner opted-in to expose "Play" CTA + theater modal. Off by default. */
   hasAudio: boolean;
   isProtected: boolean;
+  /** Number of sub-projects under this tile. >0 means the visitor card
+   *  links through to the detail page; 0 stays non-interactive. */
+  childCount: number;
   /** 1–4 — number of grid columns this card occupies horizontally. */
   colSpan: number;
   /** 1–2 — number of grid rows this card occupies vertically. */

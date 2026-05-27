@@ -18,6 +18,8 @@ type Body = {
   rowSpan?: number;
   /** Optional new section for the tile. */
   groupId?: string;
+  /** Reparent this project under another (null moves it back to top-level). */
+  parentId?: string | null;
   /** When true, surfaces the "Play" CTA + theater modal on the tile. */
   hasAudio?: boolean;
 };
@@ -56,6 +58,7 @@ export async function PUT(
     update.rowSpan = Math.min(2, Math.max(1, Math.round(data.rowSpan)));
   }
   if (data.groupId !== undefined) update.groupId = data.groupId;
+  if (data.parentId !== undefined) update.parentId = data.parentId;
   if (data.hasAudio !== undefined) update.hasAudio = Boolean(data.hasAudio);
 
   if (data.password !== undefined) {

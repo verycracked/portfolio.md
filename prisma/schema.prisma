@@ -57,11 +57,19 @@ model Project {
   // default group during migration and the API never accepts null.
   groupId       String?
   group         Group?          @relation(fields: [groupId], references: [id])
+  // Optional parent project — when set, this row is a sub-project that
+  // lives on its parent's detail page rather than on the homepage gallery.
+  // Self-referential so any depth of nesting is supported; in practice we
+  // only render one level deep per page.
+  parentId      String?
+  parent        Project?        @relation("ProjectChildren", fields: [parentId], references: [id])
+  children      Project[]       @relation("ProjectChildren")
   images        ProjectImage[]
   assets        Asset[]
   surfaces      Surface[]
 
   @@index([groupId])
+  @@index([parentId])
 }
 
 // A "product surface" is a tab inside a project: e.g. Web, Mobile, Marketing.

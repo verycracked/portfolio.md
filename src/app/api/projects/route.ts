@@ -37,10 +37,15 @@ export async function POST(req: Request) {
     /** Optional poster still — required for videos to display anything on
      *  iOS Safari without autoplay; auto-extracted client-side at upload. */
     posterUrl?: string;
-    /** Section to drop the new tile into. Falls back to the first group
+    /** Section to drop the new tile into. Falls back to the last group
      *  (creating one if none exist) so the API is forgiving for legacy
      *  callers like the snapshot extension. */
     groupId?: string;
+    /** Optional parent project. When set, the new tile is a sub-project
+     *  that lives on the parent's detail page instead of the homepage
+     *  gallery, and `groupId` is ignored (sub-projects don't belong to
+     *  sections). */
+    parentId?: string;
   };
 
   const title = body.title?.trim() || "Untitled";
@@ -49,26 +54,34 @@ export async function POST(req: Request) {
   const existing = await prisma.project.findUnique({ where: { slug } });
   if (existing) slug = `${slug}-${nanoid(4)}`;
 
-  // Resolve target section. If the caller didn't specify one, use the last
-  // existing group (so global drag-anywhere uploads land at the bottom of
-  // the page, not at the top); create the default "Untitled" group on the
-  // fly if the table is empty (only happens on a brand-new database).
-  let groupId = body.groupId;
-  if (!groupId) {
-    const last = await prisma.group.findFirst({ orderBy: { order: "desc" } });
-    if (last) {
-      groupId = last.id;
+  // Sub-projects live under their parent — they don't belong to a section.
+  // Top-level projects resolve a section (defaulting to the last group, or
+  // a freshly-created "Untitled" if the table is empty).
+  let groupId: string | null = null;
+  if (!body.parentId) {
+    if (body.groupId) {
+      groupId = body.groupId;
     } else {
-      const created = await prisma.group.create({
-        data: { slug: "untitled", name: "Untitled", order: 0 },
-      });
-      groupId = created.id;
+      const last = await prisma.group.findFirst({ orderBy: { order: "desc" } });
+      if (last) {
+        groupId = last.id;
+      } else {
+        const created = await prisma.group.create({
+          data: { slug: "untitled", name: "Untitled", order: 0 },
+        });
+        groupId = created.id;
+      }
     }
   }
 
-  // Per-group order — last + 1 so new tiles land at the end of their section.
+  // Per-bucket order — last + 1 so new tiles land at the end of whatever
+  // grid they're going into (per-parent for sub-projects, per-group for
+  // top-level).
+  const orderScope = body.parentId
+    ? { parentId: body.parentId }
+    : { groupId: groupId ?? undefined, parentId: null };
   const last = await prisma.project.findFirst({
-    where: { groupId },
+    where: orderScope,
     orderBy: { order: "desc" },
     select: { order: true },
   });
@@ -86,6 +99,7 @@ export async function POST(req: Request) {
       posterUrl: body.posterUrl,
       order,
       groupId,
+      parentId: body.parentId ?? null,
       surfaces: {
         create: {
           slug: "overview",

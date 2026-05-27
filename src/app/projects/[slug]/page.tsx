@@ -1,13 +1,26 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
+import { ArrowUpRight, ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { isAuthed } from "@/lib/auth";
 import { isProjectUnlocked } from "@/lib/project-auth";
 import { prisma } from "@/lib/prisma";
-import { ProjectForm } from "@/components/project-form";
+import { ChildGallery } from "@/components/child-gallery";
+import { HeroVideo } from "@/components/hero-video";
 import { ProjectUnlock } from "@/components/project-unlock";
+import { SkeletonImage } from "@/components/skeleton-image";
+import { FadeIn } from "@/components/fade-in";
+import { isVideoUrl } from "@/lib/media";
+import type { GalleryProject } from "@/components/gallery-types";
 
-// Owner lands here to edit; visitors are redirected to the first surface URL
-// so the public site always shows /projects/[slug]/[surfaceSlug].
+/**
+ * Public project detail page. Shows the parent's hero + name +
+ * description, and below it a single-bento `<ChildGallery>` of any
+ * sub-projects. Owners get the same drag-reorder / resize / upload chrome
+ * on the sub-grid that they have on the homepage. Visitors see a static
+ * read-only grid.
+ *
+ * Password-protected projects gate behind `<ProjectUnlock>` for visitors.
+ */
 export default async function ProjectDetail({
   params,
   searchParams,
@@ -20,9 +33,21 @@ export default async function ProjectDetail({
   const project = await prisma.project.findUnique({
     where: { slug },
     include: {
-      surfaces: {
+      children: {
         orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-        include: { images: { orderBy: { order: "asc" } } },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          description: true,
+          heroImageUrl: true,
+          posterUrl: true,
+          hasAudio: true,
+          passwordHash: true,
+          colSpan: true,
+          rowSpan: true,
+          _count: { select: { children: true } },
+        },
       },
     },
   });
@@ -33,7 +58,6 @@ export default async function ProjectDetail({
   const unlocked = isProtected ? await isProjectUnlocked(project.id) : true;
   const previewing = preview === "1";
 
-  // Visitor + protected + not unlocked → password gate
   if (isProtected && !owner && !unlocked) {
     return (
       <ProjectUnlock
@@ -44,58 +68,118 @@ export default async function ProjectDetail({
     );
   }
 
-  // Visitor (or owner-previewing): send them to the first surface's URL.
-  if (!owner || previewing) {
-    const first = project.surfaces[0];
-    if (!first) notFound();
-    const url = `/projects/${project.slug}/${first.slug}${
-      previewing ? "?preview=1" : ""
-    }`;
-    redirect(url);
-  }
+  const childGalleryData: GalleryProject[] = project.children.map(
+    ({ passwordHash, _count, ...rest }) => ({
+      ...rest,
+      isProtected: !!passwordHash,
+      childCount: _count.children,
+    })
+  );
 
-  // Owner editing in place.
-  const { passwordHash, ...rest } = project;
-  const projectClient = {
-    ...rest,
-    isProtected: !!passwordHash,
-    surfaces: project.surfaces.map((s) => ({
-      id: s.id,
-      slug: s.slug,
-      name: s.name,
-      body: s.body,
-      heroImageUrl: s.heroImageUrl,
-      order: s.order,
-      images: s.images.map((i) => ({
-        id: i.id,
-        url: i.url,
-        caption: i.caption,
-      })),
-    })),
-  };
+  const heroIsVideo = !!project.heroImageUrl && isVideoUrl(project.heroImageUrl);
 
   return (
-    <main className="mx-auto max-w-3xl px-8 py-12">
-      <div className="animate-fade-in flex items-center justify-between">
+    <main className="mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
+      {/* Back affordance — always present so visitors have a clear way out. */}
+      <FadeIn>
         <Link
-          href="/portfolio"
-          className="text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
+          href="/"
+          className="inline-flex items-center gap-1 text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
         >
-          ← Back
+          <ArrowLeft size={11} weight="bold" aria-hidden />
+          Back
         </Link>
-        <Link
-          href={`/projects/${project.slug}?preview=1`}
-          className="rounded-[6px] border border-border bg-content px-3 py-1 text-[12px] text-muted hover:text-fg"
+      </FadeIn>
+
+      {/* Hero — same visual treatment as a gallery tile, scaled up to the
+          full content area. Reuses HeroVideo for video heroes so the
+          hover-play + theater behavior carries over. */}
+      {project.heroImageUrl && (
+        <div
+          className="animate-fade-rise mt-6 overflow-hidden rounded-[8px] border border-border bg-hover"
+          style={{ ["--reveal-delay" as string]: "40ms" }}
         >
-          Preview ↗
-        </Link>
-      </div>
-      <div
-        className="animate-fade-rise mt-8"
+          <div className="relative aspect-[16/9]">
+            {heroIsVideo ? (
+              <HeroVideo
+                src={project.heroImageUrl}
+                posterUrl={project.posterUrl ?? null}
+                ariaLabel={project.title}
+                hasAudio={project.hasAudio}
+              />
+            ) : (
+              <SkeletonImage
+                src={project.heroImageUrl}
+                alt={project.title}
+                fill
+                sizes="(min-width: 768px) 90vw, 100vw"
+                priority
+                unoptimized
+                className="object-cover"
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Title + description + optional source link */}
+      <header
+        className="animate-fade-rise mt-8 flex flex-col gap-2"
         style={{ ["--reveal-delay" as string]: "80ms" }}
       >
-        <ProjectForm project={projectClient} />
-      </div>
+        <h1 className="text-[28px] font-semibold tracking-tight text-fg">
+          {project.title}
+        </h1>
+        {project.description && (
+          <p className="max-w-3xl text-[14px] text-muted">
+            {project.description}
+          </p>
+        )}
+        {project.sourceUrl && (
+          <a
+            href={project.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex items-center gap-1 self-start text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
+          >
+            {new URL(project.sourceUrl).hostname}
+            <ArrowUpRight size={11} weight="bold" aria-hidden />
+          </a>
+        )}
+        {owner && !previewing && (
+          <div className="mt-3 flex items-center gap-3 text-[11px]">
+            <Link
+              href={`/edit/${project.id}`}
+              className="text-muted underline-offset-2 hover:text-fg hover:underline"
+            >
+              Edit
+            </Link>
+            <Link
+              href={`/projects/${project.slug}?preview=1`}
+              className="text-muted underline-offset-2 hover:text-fg hover:underline"
+            >
+              Preview as visitor
+            </Link>
+          </div>
+        )}
+      </header>
+
+      {/* Sub-projects grid — single bento, identical chrome to the
+          homepage gallery. Hidden for visitors when empty; owner mode
+          always renders so the "+ Upload" tile is reachable. */}
+      {(owner && !previewing) || childGalleryData.length > 0 ? (
+        <section
+          className="animate-fade-rise mt-16 scroll-mt-8"
+          style={{ ["--reveal-delay" as string]: "160ms" }}
+        >
+          <ChildGallery
+            parentId={project.id}
+            initial={childGalleryData}
+            owner={owner}
+            previewing={previewing}
+          />
+        </section>
+      ) : null}
     </main>
   );
 }

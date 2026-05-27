@@ -4,12 +4,19 @@ import { prisma } from "@/lib/prisma";
 
 type LegacyBody = { ids?: unknown };
 type GroupedBody = {
-  /** New shape: groups in desired top-to-bottom order, each with its own
-   *  ordered list of project ids. One call rewrites both within-section
+  /** Homepage shape: groups in desired top-to-bottom order, each with its
+   *  own ordered list of project ids. One call rewrites both within-section
    *  order and the section assignment of every tile. */
   groups?: unknown;
 };
-type Body = LegacyBody & GroupedBody;
+type ParentBody = {
+  /** Sub-project shape: reorder children inside a single parent. Sets
+   *  each project's `order` to its index and ensures `parentId` matches.
+   *  Used by the project detail page's sub-gallery. */
+  parentId?: unknown;
+  childIds?: unknown;
+};
+type Body = LegacyBody & GroupedBody & ParentBody;
 
 /**
  * POST — owner-only bulk reorder. Two payloads:
@@ -30,6 +37,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const body = (await req.json().catch(() => ({}))) as Body;
+
+  // Parent-scoped reorder — used by the project detail page's sub-gallery.
+  if (typeof body.parentId === "string" && Array.isArray(body.childIds)) {
+    const parentId = body.parentId;
+    const childIds = body.childIds;
+    if (childIds.some((id) => typeof id !== "string")) {
+      return NextResponse.json(
+        { error: "childIds must be strings" },
+        { status: 400 }
+      );
+    }
+    const ids = childIds as string[];
+    await prisma.$transaction(
+      ids.map((id, index) =>
+        prisma.project.update({
+          where: { id },
+          data: { parentId, order: index },
+        })
+      )
+    );
+    return NextResponse.json({ ok: true, count: ids.length });
+  }
 
   if (Array.isArray(body.groups)) {
     const groups = body.groups as Array<{

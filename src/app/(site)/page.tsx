@@ -33,6 +33,9 @@ export default async function Home({
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
       include: {
         projects: {
+          // Only top-level projects show in the homepage gallery —
+          // sub-projects live on their parent's detail page.
+          where: { parentId: null },
           orderBy: [{ order: "asc" }, { createdAt: "asc" }],
           select: {
             id: true,
@@ -45,6 +48,8 @@ export default async function Home({
             passwordHash: true,
             colSpan: true,
             rowSpan: true,
+            // Drives the "this tile has more inside" affordance on hover.
+            _count: { select: { children: true } },
             surfaces: {
               orderBy: [{ order: "asc" }, { createdAt: "asc" }],
               take: 1,
@@ -85,10 +90,11 @@ export default async function Home({
     name: g.name,
     order: g.order,
     projects: g.projects.map(
-      ({ passwordHash, surfaces, heroImageUrl, ...rest }) => ({
+      ({ passwordHash, surfaces, heroImageUrl, _count, ...rest }) => ({
         ...rest,
         heroImageUrl: surfaces[0]?.heroImageUrl ?? heroImageUrl,
         isProtected: !!passwordHash,
+        childCount: _count.children,
       })
     ),
   }));

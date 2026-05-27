@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  ArrowUpRight,
   CornersOut,
   DotsSixVertical,
   Image as ImageIcon,
@@ -31,7 +34,12 @@ type CommonProps = {
   priority?: boolean;
 };
 
-/** Visitor card — pure media, not interactive. */
+/**
+ * Visitor card — pure media at rest. Becomes a `<Link>` when the project
+ * has at least one sub-project; click-through opens the parent's detail
+ * page. Tiles without children stay non-interactive (matches the calm
+ * tile-only vibe of the homepage).
+ */
 export function GalleryCard({
   project,
   spanClass,
@@ -42,18 +50,40 @@ export function GalleryCard({
     revealDelayMs !== undefined
       ? ({ ["--reveal-delay" as string]: `${revealDelayMs}ms` } as React.CSSProperties)
       : undefined;
+  const hasChildren = project.childCount > 0;
+
+  const body = (
+    <CardShell>
+      <HeroFrame
+        url={project.heroImageUrl}
+        posterUrl={project.posterUrl}
+        hasAudio={project.hasAudio}
+        title={project.title}
+        protected={project.isProtected}
+        priority={priority}
+        // When the tile is clickable, surface an Open CTA on hover using
+        // the same diffusion-blur treatment as the Play CTA.
+        openOverlay={hasChildren}
+      />
+    </CardShell>
+  );
+
+  if (hasChildren) {
+    return (
+      <Link
+        href={`/projects/${project.slug}`}
+        aria-label={`Open ${project.title}`}
+        className={`group/tile relative block ${spanClass}`}
+        style={style}
+      >
+        {body}
+      </Link>
+    );
+  }
+
   return (
     <div className={`relative ${spanClass}`} style={style}>
-      <CardShell>
-        <HeroFrame
-          url={project.heroImageUrl}
-          posterUrl={project.posterUrl}
-          hasAudio={project.hasAudio}
-          title={project.title}
-          protected={project.isProtected}
-          priority={priority}
-        />
-      </CardShell>
+      {body}
     </div>
   );
 }
@@ -89,6 +119,8 @@ export function SortableGalleryCard({
     data: { kind: "tile" },
   });
   const cellRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
+  const hasChildren = project.childCount > 0;
 
   const setRefs = (node: HTMLDivElement | null) => {
     cellRef.current = node;
@@ -170,7 +202,20 @@ export function SortableGalleryCard({
       data-dragging={sortable.isDragging ? "1" : undefined}
       {...sortable.attributes}
       {...sortable.listeners}
-      className={`reorder-card group relative select-none ${spanClass}`}
+      onClick={(e) => {
+        // dnd-kit only fires this when the gesture stayed within the 4px
+        // activation distance — i.e. a real click, not a drag. Use it to
+        // route into the project detail page for tiles with children.
+        if (!hasChildren) return;
+        const target = e.target as HTMLElement;
+        // Skip if the click landed on an interactive chrome button (X /
+        // resize / audio toggle) — those have their own handlers.
+        if (target.closest("button")) return;
+        router.push(`/projects/${project.slug}`);
+      }}
+      className={`reorder-card group relative select-none ${spanClass} ${
+        hasChildren ? "cursor-pointer" : ""
+      }`}
     >
       <CardShell>
         <HeroFrame
@@ -263,6 +308,7 @@ function HeroFrame({
   title,
   protected: isProtected,
   priority = false,
+  openOverlay = false,
 }: {
   url: string | null;
   posterUrl?: string | null;
@@ -270,6 +316,9 @@ function HeroFrame({
   title: string;
   protected?: boolean;
   priority?: boolean;
+  /** Surface the "Open ↗" hover overlay (used when the tile is a clickable
+   *  parent project on the homepage). */
+  openOverlay?: boolean;
 }) {
   return (
     <div className="relative aspect-[16/10] flex-1 overflow-hidden rounded-[6px] border border-border bg-hover sm:aspect-auto">
@@ -294,7 +343,10 @@ function HeroFrame({
             // softens text + edges visibly. Serve the raw PNG/JPEG so the
             // gallery stays pixel-perfect at the cost of a heavier payload.
             unoptimized
-            className="object-cover"
+            className={
+              "object-cover transition-[filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
+              (openOverlay ? "group-hover/tile:blur-[3px]" : "")
+            }
           />
         )
       ) : (
@@ -307,11 +359,34 @@ function HeroFrame({
           </p>
         </div>
       )}
+      {openOverlay && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-[5] opacity-0 transition-opacity duration-300 ease-out group-hover/tile:opacity-100"
+            style={{
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              maskImage:
+                "radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0) 90%)",
+              WebkitMaskImage:
+                "radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0) 90%)",
+            }}
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 text-[15px] font-medium text-white opacity-0 drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)] transition-opacity duration-300 ease-out group-hover/tile:opacity-100"
+          >
+            Open
+            <ArrowUpRight size={16} weight="bold" />
+          </span>
+        </>
+      )}
       {isProtected && (
         <span
           aria-label="Protected"
           title="Password protected"
-          className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/95 px-2 py-0.5 text-[11px] text-muted"
+          className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/95 px-2 py-0.5 text-[11px] text-muted"
         >
           <Lock weight="fill" size={11} aria-hidden />
           Locked
