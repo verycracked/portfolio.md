@@ -253,8 +253,10 @@ select {
 }
 
 /* Loading skeleton — sits behind images / video posters until they finish
- * loading. A diagonal sheen pans across a subtle base gradient so the
- * placeholder reads as "working" rather than just "broken / missing." */
+ * loading. A diagonal sheen pans across a slightly raised base so the
+ * placeholder reads as "working" rather than just "broken / missing."
+ * Highlight is intentionally bright on dark mode (~22% white) so the
+ * shimmer is actually visible against the surrounding dark UI. */
 @keyframes skeleton-shimmer {
   0% {
     background-position: 200% 0;
@@ -264,24 +266,25 @@ select {
   }
 }
 .skeleton-shimmer {
-  background-color: var(--hover);
+  background-color: var(--border);
   background-image: linear-gradient(
     100deg,
     transparent 0%,
-    transparent 30%,
-    rgba(255, 255, 255, 0.045) 45%,
-    rgba(255, 255, 255, 0.07) 50%,
-    rgba(255, 255, 255, 0.045) 55%,
-    transparent 70%,
+    transparent 20%,
+    rgba(255, 255, 255, 0.08) 38%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.08) 62%,
+    transparent 80%,
     transparent 100%
   );
-  background-size: 200% 100%;
+  background-size: 220% 100%;
   background-repeat: no-repeat;
-  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  animation: skeleton-shimmer 1.4s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .skeleton-shimmer {
     animation: none;
+    background-color: var(--border);
   }
 }
 

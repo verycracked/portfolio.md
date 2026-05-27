@@ -1,7 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -13,6 +12,7 @@ import {
   X,
 } from "@phosphor-icons/react/dist/ssr";
 import { HeroVideo } from "@/components/hero-video";
+import { SkeletonImage } from "@/components/skeleton-image";
 import { isVideoUrl } from "@/lib/media";
 import type { GalleryProject } from "@/components/gallery-types";
 
@@ -271,11 +271,6 @@ function HeroFrame({
   protected?: boolean;
   priority?: boolean;
 }) {
-  // Per-tile load state so the skeleton can fade out exactly when this
-  // tile's image is ready. Videos manage their own poster timing inside
-  // HeroVideo, so we only need this for the image branch.
-  const [imgLoaded, setImgLoaded] = useState(false);
-
   return (
     <div className="relative aspect-[16/10] flex-1 overflow-hidden rounded-[6px] border border-border bg-hover sm:aspect-auto">
       {url ? (
@@ -289,28 +284,15 @@ function HeroFrame({
             hasAudio={hasAudio}
           />
         ) : (
-          <>
-            {/* Shimmering skeleton underneath the image. Stays animated
-                until the image's onLoad fires, then fades out behind the
-                now-visible photo. */}
-            <div
-              aria-hidden
-              className={
-                "skeleton-shimmer absolute inset-0 transition-opacity duration-500 " +
-                (imgLoaded ? "opacity-0" : "opacity-100")
-              }
-            />
-            <Image
-              src={url}
-              alt={title}
-              fill
-              sizes={HERO_SIZES}
-              priority={priority}
-              data-loaded={imgLoaded ? "true" : "false"}
-              onLoad={() => setImgLoaded(true)}
-              className="media-fade object-cover"
-            />
-          </>
+          <SkeletonImage
+            src={url}
+            alt={title}
+            fill
+            sizes={HERO_SIZES}
+            priority={priority}
+            wrapperClassName="absolute inset-0"
+            className="object-cover"
+          />
         )
       ) : (
         // Empty hero — soft gradient + title placeholder so a tile without

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { SkeletonImage } from "@/components/skeleton-image";
 
 type Props = {
   initialUrl: string | null;
@@ -53,9 +54,15 @@ export function Avatar({ initialUrl, editable }: Props) {
   if (!editable) {
     if (!url) return null;
     return (
-      <div className="size-16 overflow-hidden rounded-full border border-border bg-content">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} alt="" className="h-full w-full object-cover" />
+      <div className="relative size-16 overflow-hidden rounded-full border border-border bg-content">
+        <SkeletonImage
+          src={url}
+          alt=""
+          fill
+          sizes="64px"
+          wrapperClassName="absolute inset-0"
+          className="object-cover"
+        />
       </div>
     );
   }
@@ -78,8 +85,14 @@ export function Avatar({ initialUrl, editable }: Props) {
         aria-label={url ? "Remove avatar" : "Upload avatar"}
       >
         {url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" className="h-full w-full object-cover" />
+          <SkeletonImage
+            src={url}
+            alt=""
+            fill
+            sizes="64px"
+            wrapperClassName="absolute inset-0"
+            className="object-cover"
+          />
         ) : (
           <span className="flex h-full w-full items-center justify-center text-[11px] text-tertiary">
             Photo

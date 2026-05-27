@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Play } from "@phosphor-icons/react/dist/ssr";
+import { SkeletonImage } from "@/components/skeleton-image";
 import { TheaterModal } from "@/components/theater-modal";
 
 const HERO_SIZES = "(min-width: 640px) 50vw, 100vw";
@@ -38,9 +38,6 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props
   const [isTouch, setIsTouch] = useState<boolean | null>(null);
   // Touch + has-poster: stays on the poster <Image> until tapped.
   const [activated, setActivated] = useState(false);
-  // Mirrors HeroFrame's pattern: skeleton stays visible until the poster
-  // image's onLoad fires.
-  const [posterLoaded, setPosterLoaded] = useState(false);
   // When true, the theater modal is open.
   const [theaterOpen, setTheaterOpen] = useState(false);
 
@@ -146,24 +143,16 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props
             onClick={() => setActivated(true)}
             className="relative block h-full w-full"
           >
-            <div
-              aria-hidden
-              className={
-                "skeleton-shimmer absolute inset-0 transition-opacity duration-500 " +
-                (posterLoaded ? "opacity-0" : "opacity-100")
-              }
-            />
-            <Image
+            <SkeletonImage
               src={posterUrl}
               alt={ariaLabel}
               fill
               sizes={HERO_SIZES}
-              data-loaded={posterLoaded ? "true" : "false"}
-              onLoad={() => setPosterLoaded(true)}
+              wrapperClassName="absolute inset-0"
               // Blur only when the Play CTA is overlaid; otherwise leave
               // the poster crisp so it reads as a real still image.
               className={
-                "media-fade object-cover " + (hasAudio ? "blur-[3px]" : "")
+                "object-cover " + (hasAudio ? "blur-[3px]" : "")
               }
               draggable={false}
             />
