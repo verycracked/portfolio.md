@@ -290,6 +290,10 @@ function HeroFrame({
             fill
             sizes={HERO_SIZES}
             priority={priority}
+            // Skip the WebP/AVIF transcode — for UI screenshots even q=92
+            // softens text + edges visibly. Serve the raw PNG/JPEG so the
+            // gallery stays pixel-perfect at the cost of a heavier payload.
+            unoptimized
             className="object-cover"
           />
         )

@@ -148,6 +148,8 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props
               alt={ariaLabel}
               fill
               sizes={HERO_SIZES}
+              // Skip the transcode (see gallery-card for the rationale).
+              unoptimized
               // Blur only when the Play CTA is overlaid; otherwise leave
               // the poster crisp so it reads as a real still image.
               className={
