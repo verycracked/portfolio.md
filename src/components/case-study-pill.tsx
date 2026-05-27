@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import {
   AnimatePresence,
   motion,
@@ -111,8 +110,6 @@ export function CaseStudyPill({
 
   useEffect(() => clearTimers, []);
 
-  const caseStudyHref = `/projects/${project.slug}/${project.firstSurfaceSlug}`;
-
   return (
     <span
       className="relative"
@@ -213,7 +210,7 @@ export function CaseStudyPill({
               <motion.div
                 id={`case-study-${project.slug}`}
                 role="tooltip"
-                className="double-stroke pointer-events-auto fixed z-[100] w-[180px] origin-top-left rounded-[6px] bg-content p-2"
+                className="double-stroke pointer-events-none fixed z-[100] w-[180px] origin-top-left rounded-[6px] bg-content p-2"
                 style={{
                   left: x,
                   top: y,
@@ -224,11 +221,9 @@ export function CaseStudyPill({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
-                onMouseEnter={clearTimers}
-                onMouseLeave={requestClose}
                 key="case-study-tooltip"
               >
-                <div className="relative z-[1] mb-2 flex flex-col gap-0.5">
+                <div className="relative z-[1] flex flex-col gap-0.5">
                   <div className="flex items-center gap-1">
                     <h4 className="text-[11.5px] font-medium leading-tight text-fg">
                       {project.title}
@@ -247,25 +242,6 @@ export function CaseStudyPill({
                       {project.description}
                     </p>
                   )}
-                </div>
-
-                <div className="relative z-[1] flex items-center gap-1">
-                  <Link
-                    href={caseStudyHref}
-                    className="inline-flex items-center gap-0.5 rounded-[4px] bg-fg px-1.5 py-1 text-[10px] font-medium text-content transition-opacity hover:opacity-90"
-                  >
-                    <span>Case study</span>
-                    <ArrowUpRight weight="bold" size={9} aria-hidden />
-                  </Link>
-                  <a
-                    href={href}
-                    target={external ? "_blank" : undefined}
-                    rel={external ? "noopener noreferrer" : undefined}
-                    className="inline-flex items-center gap-0.5 rounded-[4px] bg-hover px-1.5 py-1 text-[10px] text-muted transition-colors hover:bg-border hover:text-fg"
-                  >
-                    <span>Open link</span>
-                    <ArrowUpRight weight="bold" size={9} aria-hidden />
-                  </a>
                 </div>
               </motion.div>
             )}
