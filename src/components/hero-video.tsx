@@ -92,8 +92,9 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props
 
   const listenButton = hasAudio ? (
     <>
-      {/* Diffusion layer — radial scrim with backdrop-blur that strengthens
-          near the CTA and tapers off, so focus settles on the button. */}
+      {/* Diffusion layer — a radial backdrop-blur that intensifies near
+          the CTA and tapers off toward the edges. No dark scrim; the
+          frosted-glass effect alone provides separation from the video. */}
       <div
         aria-hidden
         className={
@@ -103,8 +104,6 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props
         style={{
           backdropFilter: "blur(6px)",
           WebkitBackdropFilter: "blur(6px)",
-          background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.2) 45%, rgba(0,0,0,0) 75%)",
           maskImage:
             "radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0) 90%)",
           WebkitMaskImage:
