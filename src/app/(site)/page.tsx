@@ -51,11 +51,6 @@ export default async function Home({
             rowSpan: true,
             // Drives the "this tile has more inside" affordance on hover.
             _count: { select: { children: true } },
-            surfaces: {
-              orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-              take: 1,
-              select: { slug: true, heroImageUrl: true },
-            },
           },
         },
       },
@@ -67,8 +62,8 @@ export default async function Home({
   const allProjects = groupRows.flatMap((g) => g.projects);
 
   // Case-study map (slug → summary) for the markdown renderer's hover
-  // tooltips on pills whose slug matches a project. Built from the flat
-  // list across every section.
+  // tooltips on pills whose slug matches a project. Hero falls back to
+  // the project's own image — surfaces are no longer used for cover art.
   const caseStudies = new Map<string, ProjectSummary>(
     allProjects.map((p) => [
       p.slug,
@@ -76,28 +71,29 @@ export default async function Home({
         slug: p.slug,
         title: p.title,
         description: p.description,
-        heroImageUrl: p.surfaces[0]?.heroImageUrl ?? null,
-        firstSurfaceSlug: p.surfaces[0]?.slug ?? "overview",
+        heroImageUrl: p.heroImageUrl,
+        // Legacy field kept for back-compat with the ProjectSummary type;
+        // no consumer reads it today.
+        firstSurfaceSlug: "overview",
         isProtected: !!p.passwordHash,
       },
     ])
   );
 
-  // Shape into the GalleryGroup type the client expects. Each tile prefers
-  // the active surface's hero, falling back to the legacy project-level one.
+  // Shape into the GalleryGroup type the client expects. Hero comes
+  // straight from the project — surface heroes are no longer overlaid so
+  // the homepage tile and the project detail page always show the same
+  // cover.
   const galleryGroups: GalleryGroup[] = groupRows.map((g) => ({
     id: g.id,
     slug: g.slug,
     name: g.name,
     order: g.order,
-    projects: g.projects.map(
-      ({ passwordHash, surfaces, heroImageUrl, _count, ...rest }) => ({
-        ...rest,
-        heroImageUrl: surfaces[0]?.heroImageUrl ?? heroImageUrl,
-        isProtected: !!passwordHash,
-        childCount: _count.children,
-      })
-    ),
+    projects: g.projects.map(({ passwordHash, _count, ...rest }) => ({
+      ...rest,
+      isProtected: !!passwordHash,
+      childCount: _count.children,
+    })),
   }));
 
   if (editing) {
