@@ -52,22 +52,43 @@ export function ViewEditorHeader({
     []
   );
 
-  const debouncedSaveView = (patch: Record<string, unknown>) => {
+  /** Generic patch save. Returns the server's response body so callers
+   *  can sync back any server-derived fields (e.g. the slug that the
+   *  server re-derives from a renamed `name`). */
+  const debouncedSaveView = (
+    patch: Record<string, unknown>,
+    onSettled?: (updated: { slug?: string; name?: string }) => void
+  ) => {
     if (debounce.current) clearTimeout(debounce.current);
-    debounce.current = setTimeout(() => {
-      void tracker.track(
+    debounce.current = setTimeout(async () => {
+      const res = await tracker.track(
         fetch(`/api/views/${viewId}`, {
           method: "PUT",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(patch),
         })
       );
+      if (!res.ok) return;
+      if (onSettled) {
+        const updated = (await res.json().catch(() => null)) as
+          | { slug?: string; name?: string }
+          | null;
+        if (updated) onSettled(updated);
+      }
     }, SAVE_DEBOUNCE_MS);
   };
 
   const updateName = (next: string) => {
     setName(next);
-    debouncedSaveView({ name: next });
+    // Server auto-derives a new slug from the renamed view. Mirror it
+    // back into local state so the slug-input below the h1 and the
+    // share URL stay in lock-step with what visitors will see.
+    debouncedSaveView({ name: next }, (updated) => {
+      if (updated.slug && updated.slug !== slug) {
+        setSlug(updated.slug);
+        setSlugDraft(updated.slug);
+      }
+    });
   };
 
   const updateGreeting = (next: string) => {

@@ -40,8 +40,17 @@ export async function PUT(
       ? data.groupIds.filter((s) => typeof s === "string")
       : [];
   }
+
+  // Slug behavior: an explicit slug in the body always wins (lets the
+  // owner customize the share URL independently). When no slug is
+  // supplied but the name is, derive the slug from the name so renaming
+  // a view automatically updates its share URL — `/v/<new-slug>`. Slugs
+  // are deduped via uniqueViewSlug so renaming two views to the same
+  // label produces stable, distinct links.
   if (data.slug !== undefined) {
     update.slug = await uniqueViewSlug(data.slug, id);
+  } else if (data.name !== undefined) {
+    update.slug = await uniqueViewSlug(data.name, id);
   }
 
   const view = await prisma.view.update({ where: { id }, data: update });

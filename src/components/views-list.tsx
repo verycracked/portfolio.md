@@ -84,8 +84,12 @@ export function ViewsList({ initialViews }: Props) {
     await fetch(`/api/views/${id}`, { method: "DELETE" });
   };
 
-  const renameView = (id: string, name: string) => {
-    setViews((vs) => vs.map((v) => (v.id === id ? { ...v, name } : v)));
+  const renameView = (id: string, name: string, slug?: string) => {
+    setViews((vs) =>
+      vs.map((v) =>
+        v.id === id ? { ...v, name, ...(slug ? { slug } : {}) } : v
+      )
+    );
   };
 
   return (
@@ -130,7 +134,7 @@ function ViewRowCard({
   view: ViewRow;
   startEditing: boolean;
   onConsumeAutoEdit: () => void;
-  onRename: (name: string) => void;
+  onRename: (name: string, slug?: string) => void;
   onDelete: () => void;
 }) {
   const [copied, setCopied] = useState(false);
@@ -164,12 +168,20 @@ function ViewRowCard({
 
   const persistName = (next: string) => {
     if (debounce.current) clearTimeout(debounce.current);
-    debounce.current = setTimeout(() => {
-      void fetch(`/api/views/${view.id}`, {
+    debounce.current = setTimeout(async () => {
+      const res = await fetch(`/api/views/${view.id}`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name: next }),
       });
+      if (!res.ok) return;
+      // Server auto-derives the slug from the new name; pull the
+      // canonical slug back so the share URL in this row reflects the
+      // rename immediately.
+      const updated = (await res.json().catch(() => null)) as
+        | { slug?: string }
+        | null;
+      if (updated?.slug) onRename(next, updated.slug);
     }, SAVE_DEBOUNCE_MS);
   };
 
