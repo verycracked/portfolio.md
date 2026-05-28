@@ -7,6 +7,7 @@ import { NomoEditor } from "@/components/nomo-editor";
 import { FadeIn } from "@/components/fade-in";
 import { Gallery } from "@/components/gallery";
 import { HomeDropzone } from "@/components/home-dropzone";
+import { OwnerToolbar } from "@/components/owner-toolbar";
 import type { GalleryGroup } from "@/components/gallery-types";
 import type { ProjectSummary } from "@/lib/case-study";
 
@@ -109,6 +110,7 @@ export default async function Home({
 
   return (
     <FadeIn>
+      {owner && <OwnerToolbar previewing={previewing} />}
       {owner && !previewing && <HomeDropzone />}
       <NomoMarkdown
         body={doc.body}

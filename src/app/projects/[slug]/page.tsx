@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { ChildGallery } from "@/components/child-gallery";
 import { ProjectHero } from "@/components/project-hero";
 import { ProjectHeroFrame } from "@/components/project-hero-frame";
+import { OwnerToolbar } from "@/components/owner-toolbar";
 import { ProjectUnlock } from "@/components/project-unlock";
 import { SkeletonImage } from "@/components/skeleton-image";
 import { FadeIn } from "@/components/fade-in";
@@ -111,6 +112,7 @@ export default async function ProjectDetail({
 
   return (
     <main className="mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
+      {owner && <OwnerToolbar previewing={previewing} />}
       {/* Back affordance — always present so visitors have a clear way out. */}
       <FadeIn>
         <Link
