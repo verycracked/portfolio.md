@@ -2,13 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isAuthed } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { readNomoDocument } from "@/lib/nomo-content";
 import { NomoMarkdown } from "@/lib/nomo-markdown";
+import matter from "gray-matter";
 import { FadeIn } from "@/components/fade-in";
 import { Gallery } from "@/components/gallery";
 import { OwnerToolbar } from "@/components/owner-toolbar";
 import { ViewGreeting } from "@/components/view-greeting";
-import { parseIdList } from "@/lib/view-helpers";
 import type { GalleryGroup } from "@/components/gallery-types";
 import type { ProjectSummary } from "@/lib/case-study";
 
@@ -17,18 +16,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * Public render of a saved View. Same overall shape as `/` but the
- * sections are filtered/toggled per the View row:
- *
- *   • `showAbout`     → render the markdown intro + avatar (or skip it)
- *   • `showProjects`  → render the gallery (or skip it)
- *   • `projectIds[]`  → only show these projects in the gallery (empty
- *                       array means "no filter — show all")
- *   • `groupIds[]`    → only render these groups in the gallery
- *   • `greeting`      → optional banner at the top, "Hi Sarah, here's…"
- *
- * The owner gets the regular OwnerToolbar so they can hop to /views or
- * back to `/`. Visitors see no chrome other than what the View opted in.
+ * Public render of a saved View — reads from the per-view tables
+ * (ViewGroup + ViewProject) and the per-view markdown body
+ * (View.aboutBody). Each view is independent of `/` and every other
+ * view, so what visitors see is exactly what the owner curated.
  */
 export default async function ViewPage({
   params,
@@ -36,67 +27,56 @@ export default async function ViewPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const view = await prisma.view.findUnique({ where: { slug } });
-  if (!view) notFound();
-
-  const projectWhitelist = parseIdList(view.projectIds);
-  const groupWhitelist = parseIdList(view.groupIds);
-
-  const [doc, settings, owner, groupRows] = await Promise.all([
-    // Markdown body is only fetched when the view actually shows the
-    // about section — small win on the projects-only case.
-    view.showAbout
-      ? readNomoDocument("human")
-      : Promise.resolve({ raw: "", body: "" }),
-    view.showAbout
-      ? prisma.settings.findUnique({
-          where: { id: "main" },
-          select: { avatarUrl: true },
-        })
-      : Promise.resolve(null),
-    isAuthed(),
-    view.showProjects
-      ? prisma.group.findMany({
-          where:
-            groupWhitelist.length > 0
-              ? { id: { in: groupWhitelist } }
-              : undefined,
+  const [view, settings, owner] = await Promise.all([
+    prisma.view.findUnique({
+      where: { slug },
+      include: {
+        groups: {
           orderBy: [{ order: "asc" }, { createdAt: "asc" }],
           include: {
             projects: {
-              where: {
-                parentId: null,
-                ...(projectWhitelist.length > 0
-                  ? { id: { in: projectWhitelist } }
-                  : {}),
-              },
+              where: { parentId: null },
               orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-              select: {
-                id: true,
-                slug: true,
-                title: true,
-                description: true,
-                heroImageUrl: true,
-                posterUrl: true,
-                hasAudio: true,
-                isOpenable: true,
-                passwordHash: true,
-                colSpan: true,
-                rowSpan: true,
-                _count: { select: { children: true } },
-              },
             },
           },
-        })
-      : Promise.resolve([]),
+        },
+      },
+    }),
+    prisma.settings.findUnique({
+      where: { id: "main" },
+      select: { avatarUrl: true },
+    }),
+    isAuthed(),
   ]);
+  if (!view) notFound();
 
-  // Drop empty groups so a project whitelist that excluded everything in
-  // a group doesn't leave a lone section header behind.
-  const populatedGroups = groupRows.filter((g) => g.projects.length > 0);
+  // Markdown is stored with optional frontmatter — parse the same way
+  // readNomoDocument does, so layout/theme/font frontmatter still works.
+  const parsed = view.aboutBody ? matter(view.aboutBody) : { content: "" };
+  const aboutMarkdown = parsed.content ?? "";
 
-  const allProjects = populatedGroups.flatMap((g) => g.projects);
+  const galleryGroups: GalleryGroup[] = view.groups.map((g) => ({
+    id: g.id,
+    slug: g.slug,
+    name: g.name,
+    order: g.order,
+    projects: g.projects.map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      description: p.description,
+      heroImageUrl: p.heroImageUrl,
+      posterUrl: p.posterUrl,
+      hasAudio: p.hasAudio,
+      isOpenable: p.isOpenable,
+      isProtected: false,
+      childCount: 0,
+      colSpan: p.colSpan,
+      rowSpan: p.rowSpan,
+    })),
+  }));
 
+  const allProjects = galleryGroups.flatMap((g) => g.projects);
   const caseStudies = new Map<string, ProjectSummary>(
     allProjects.map((p) => [
       p.slug,
@@ -106,22 +86,10 @@ export default async function ViewPage({
         description: p.description,
         heroImageUrl: p.heroImageUrl,
         firstSurfaceSlug: "overview",
-        isProtected: !!p.passwordHash,
+        isProtected: false,
       },
     ])
   );
-
-  const galleryGroups: GalleryGroup[] = populatedGroups.map((g) => ({
-    id: g.id,
-    slug: g.slug,
-    name: g.name,
-    order: g.order,
-    projects: g.projects.map(({ passwordHash, _count, ...rest }) => ({
-      ...rest,
-      isProtected: !!passwordHash,
-      childCount: _count.children,
-    })),
-  }));
 
   return (
     <FadeIn>
@@ -129,9 +97,9 @@ export default async function ViewPage({
 
       {view.greeting && <ViewGreeting text={view.greeting} />}
 
-      {view.showAbout && (
+      {view.showAbout && aboutMarkdown && (
         <NomoMarkdown
-          body={doc.body}
+          body={aboutMarkdown}
           context={{ avatarUrl: settings?.avatarUrl ?? null, caseStudies }}
         />
       )}
@@ -143,8 +111,9 @@ export default async function ViewPage({
         >
           <Gallery
             initial={galleryGroups}
-            owner={false /* read-only on a shared view */}
+            owner={false}
             previewing
+            disableLinks
           />
         </section>
       )}

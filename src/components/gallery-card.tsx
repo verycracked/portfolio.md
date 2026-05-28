@@ -39,6 +39,10 @@ type CommonProps = {
   revealDelayMs?: number;
   /** Skip lazy loading + emit a preload for tiles above the fold. */
   priority?: boolean;
+  /** When true, the tile body never wraps in a Link and the owner-mode
+   *  click handler doesn't router.push. Used in view editors where the
+   *  per-view slug doesn't resolve to a canonical /projects/[slug] page. */
+  disableLinks?: boolean;
 };
 
 /**
@@ -53,6 +57,7 @@ export function GalleryCard({
   spanStyle,
   revealDelayMs,
   priority,
+  disableLinks = false,
 }: CommonProps) {
   // Merge the reveal-delay CSS var (when supplied) into the same style
   // object so we only spread one prop onto the outer element.
@@ -67,7 +72,7 @@ export function GalleryCard({
   // A tile is clickable when it has children OR the owner explicitly
   // opted in to a detail page (e.g. a stand-alone project with a
   // meaningful write-up but no sub-projects).
-  const clickable = project.childCount > 0 || project.isOpenable;
+  const clickable = (project.childCount > 0 || project.isOpenable) && !disableLinks;
   const previewing = usePreviewing();
 
   const body = (
@@ -135,6 +140,7 @@ export function SortableGalleryCard({
   spanStyle,
   revealDelayMs,
   priority,
+  disableLinks = false,
   onDelete,
   onResize,
   onResizeCommit,
@@ -150,7 +156,7 @@ export function SortableGalleryCard({
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
   const previewing = usePreviewing();
-  const clickable = project.childCount > 0 || project.isOpenable;
+  const clickable = (project.childCount > 0 || project.isOpenable) && !disableLinks;
   // Inline rename UX — the ↗ chip below opens this overlay; the user
   // names the tile and on submit we promote it to a project.
   const [renaming, setRenaming] = useState(false);

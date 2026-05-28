@@ -11,6 +11,11 @@ type Props = {
   initialRaw: string;
   avatarUrl: string | null;
   caseStudies: Map<string, ProjectSummary>;
+  /** Override the persistence target. When omitted, the editor PUTs to
+   *  `/api/pages/[slug]` with `{ body }` — the canonical Page table.
+   *  Per-view editors pass a custom save function so the markdown lands
+   *  on `View.aboutBody` instead. */
+  onSave?: (raw: string) => Promise<boolean>;
 };
 
 type LinkDraft = {
@@ -42,6 +47,7 @@ export function NomoEditor({
   initialRaw,
   avatarUrl,
   caseStudies,
+  onSave,
 }: Props) {
   const [raw, setRaw] = useState(initialRaw);
   const [draft, setDraft] = useState<LinkDraft | null>(null);
@@ -79,12 +85,18 @@ export function NomoEditor({
     debounce.current = setTimeout(async () => {
       setSaving(true);
       try {
-        const res = await fetch(`/api/pages/${slug}`, {
-          method: "PUT",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ body: raw }),
-        });
-        if (res.ok) setSavedAt(new Date());
+        let ok = false;
+        if (onSave) {
+          ok = await onSave(raw);
+        } else {
+          const res = await fetch(`/api/pages/${slug}`, {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ body: raw }),
+          });
+          ok = res.ok;
+        }
+        if (ok) setSavedAt(new Date());
       } finally {
         setSaving(false);
       }
@@ -92,7 +104,7 @@ export function NomoEditor({
     return () => {
       if (debounce.current) clearTimeout(debounce.current);
     };
-  }, [raw, initialRaw, slug]);
+  }, [raw, initialRaw, slug, onSave]);
 
   const insertLink = () => {
     if (!draft || !taRef.current) return;

@@ -5,8 +5,15 @@ import { useRouter } from "next/navigation";
 import { Plus, UploadSimple } from "@phosphor-icons/react/dist/ssr";
 import { MEDIA_ACCEPT } from "@/lib/media";
 import { uploadMedia } from "@/lib/media-utils";
+import {
+  MAIN_SCOPE,
+  projectsBase,
+  type GalleryScope,
+} from "@/lib/gallery-scope";
 
-type Props =
+type ScopedProps = { scope?: GalleryScope };
+
+type Props = ScopedProps & (
   | {
       /** Top-level upload — new tile lands in this group on the homepage. */
       groupId: string;
@@ -16,7 +23,8 @@ type Props =
       /** Sub-project upload — new tile becomes a child of this project. */
       parentId: string;
       groupId?: never;
-    };
+    }
+);
 
 /**
  * Owner-only upload affordance. Sits in section headers (for the
@@ -30,7 +38,10 @@ type Props =
  *     its editor so the owner can fill it in.
  */
 export function NewTile(props: Props) {
-  const { groupId, parentId } = props;
+  const { groupId, parentId, scope = MAIN_SCOPE } = props;
+  // The view-scoped API expects `groupId` to be a ViewGroup id (the
+  // groupsBase/projectsBase URL prefix already differentiates the
+  // tables); same wire shape, different table.
   const target = parentId ? { parentId } : { groupId };
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -45,7 +56,7 @@ export function NewTile(props: Props) {
           alert(`upload failed: ${file.name}`);
           continue;
         }
-        const proj = await fetch("/api/projects", {
+        const proj = await fetch(projectsBase(scope), {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -72,7 +83,7 @@ export function NewTile(props: Props) {
     if (busy) return;
     setBusy(true);
     try {
-      const res = await fetch("/api/projects", {
+      const res = await fetch(projectsBase(scope), {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -83,7 +94,13 @@ export function NewTile(props: Props) {
       });
       if (!res.ok) return;
       const project = (await res.json()) as { id: string };
-      router.push(`/edit/${project.id}`);
+      // View-scoped tiles don't have a canonical /edit route yet, so we
+      // just refresh the view editor (the owner can rename inline).
+      if (scope.kind === "view") {
+        router.refresh();
+      } else {
+        router.push(`/edit/${project.id}`);
+      }
     } finally {
       setBusy(false);
     }

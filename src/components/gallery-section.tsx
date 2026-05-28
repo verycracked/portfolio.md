@@ -12,6 +12,7 @@ import {
 } from "@/components/gallery-card";
 import { NewTile } from "@/components/new-tile";
 import { spanStyle, type GalleryGroup } from "@/components/gallery-types";
+import { MAIN_SCOPE, type GalleryScope } from "@/lib/gallery-scope";
 
 
 type CommonProps = {
@@ -25,6 +26,11 @@ type VisitorProps = CommonProps & {
 };
 
 type OwnerProps = CommonProps & {
+  /** Routes writes to either the main API or a per-view API. */
+  scope?: GalleryScope;
+  /** When true, tile click-through is disabled (used in view editor where
+   *  tile slugs aren't canonical Project slugs). */
+  disableLinks?: boolean;
   onRename: (name: string) => void;
   onDelete: () => void;
   onProjectDelete: (id: string) => void;
@@ -42,6 +48,8 @@ type OwnerProps = CommonProps & {
  */
 export function GallerySection({
   group,
+  scope = MAIN_SCOPE,
+  disableLinks = false,
   onRename,
   onDelete,
   onProjectDelete,
@@ -83,7 +91,7 @@ export function GallerySection({
           ...sortable.attributes,
           ...sortable.listeners,
         }}
-        uploadSlot={<NewTile groupId={group.id} />}
+        uploadSlot={<NewTile groupId={group.id} scope={scope} />}
       />
       <SortableContext
         items={group.projects.map((p) => p.id)}
@@ -110,6 +118,7 @@ export function GallerySection({
               onPromote={(title) => onProjectPromote(p.id, title)}
               onReplaceCover={(file) => onProjectReplaceCover(p.id, file)}
               spanStyle={spanStyle(p.colSpan, p.rowSpan)}
+              disableLinks={disableLinks}
             />
           ))}
         </div>

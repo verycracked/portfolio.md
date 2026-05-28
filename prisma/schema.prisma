@@ -8,9 +8,10 @@ datasource db {
 }
 
 // A curated *version* of the portfolio at a shareable URL like `/v/[slug]`.
-// Lets the owner build different presentations for different audiences:
-// e.g. a hiring manager gets the full site, a friend gets a projects-only
-// view, etc. The owner side lives at /views.
+// Each view owns its own copy of the homepage content (markdown intro,
+// gallery sections, tile arrangement) so edits in one view don't bleed
+// into another or into the main `/` page. A fresh view is seeded with a
+// snapshot of `/` so the owner has a starting point to mutate.
 model View {
   id           String   @id @default(cuid())
   // URL slug — `/v/<slug>` resolves to this view. Kept distinct from
@@ -21,21 +22,81 @@ model View {
   // Optional one-liner for the share-banner at the top of the public
   // view. Lets the owner say hi to whoever they shared the link with.
   greeting     String   @default("")
-  // Toggle the "about" content (markdown body + avatar) at the top of
-  // the homepage. False = a projects-only / portfolio-only view.
+  // Per-view markdown intro — mirrors the human.md document the main
+  // page renders, but isolated so each view can have its own copy.
+  aboutBody    String   @default("")
+  // Toggle the about section + the gallery section in the rendered view.
   showAbout    Boolean  @default(true)
-  // Toggle the projects gallery. False = an about-only view.
   showProjects Boolean  @default(true)
-  // Optional whitelist of project IDs (empty array = show all). Stored
-  // as a JSON array so we can filter both top-level tiles and inside
-  // groups without an extra join table.
+  // LEGACY filter fields from the previous filter-only design. New views
+  // ignore these; the per-view groups + projects tables drive content.
+  // Kept on the row so existing rows continue to load.
   projectIds   Json     @default("[]")
-  // Optional whitelist of group IDs (empty array = show all).
   groupIds     Json     @default("[]")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  groups       ViewGroup[]
+  projects     ViewProject[]
+
   @@index([slug])
+}
+
+// Per-view gallery section — sibling of Group but scoped to a single view.
+model ViewGroup {
+  id        String        @id @default(cuid())
+  viewId    String
+  view      View          @relation(fields: [viewId], references: [id], onDelete: Cascade)
+  slug      String
+  name      String
+  order     Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  projects  ViewProject[]
+
+  @@unique([viewId, slug])
+  @@index([viewId])
+}
+
+// Per-view project tile. Mirrors the fields the homepage gallery reads
+// from `Project`, so the Gallery component can render either source with
+// the same shape. `sourceProjectId` is an optional pointer to the
+// canonical Project this row was seeded from — used so clicking a view
+// tile can still deep-link to the canonical /projects/[slug] detail
+// page. Tiles created directly inside a view (no seed origin) leave
+// sourceProjectId null.
+model ViewProject {
+  id              String     @id @default(cuid())
+  viewId          String
+  view            View       @relation(fields: [viewId], references: [id], onDelete: Cascade)
+  viewGroupId     String?
+  viewGroup       ViewGroup? @relation(fields: [viewGroupId], references: [id], onDelete: SetNull)
+  sourceProjectId String?
+  sourceProject   Project?   @relation("ViewProjectSource", fields: [sourceProjectId], references: [id], onDelete: SetNull)
+  // Self-relation for sub-projects within a view (mirrors Project.parentId).
+  parentId        String?
+  parent          ViewProject?  @relation("ViewProjectChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children        ViewProject[] @relation("ViewProjectChildren")
+
+  slug         String
+  title        String
+  description  String  @default("")
+  heroImageUrl String?
+  posterUrl    String?
+  heroOffsetY  Float   @default(50)
+  hasAudio     Boolean @default(false)
+  isOpenable   Boolean @default(false)
+  colSpan      Int     @default(6)
+  rowSpan      Int     @default(6)
+  order        Int     @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([viewId, slug])
+  @@index([viewId])
+  @@index([viewGroupId])
+  @@index([sourceProjectId])
+  @@index([parentId])
 }
 
 // A named group of project tiles on the homepage gallery, e.g. "CodeRabbit",
@@ -107,6 +168,9 @@ model Project {
   images        ProjectImage[]
   assets        Asset[]
   surfaces      Surface[]
+  // Inverse of ViewProject.sourceProject — rows in any View that point
+  // back at this canonical Project as their seed origin.
+  viewMirrors   ViewProject[] @relation("ViewProjectSource")
 
   @@index([groupId])
   @@index([parentId])

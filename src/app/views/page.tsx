@@ -3,54 +3,40 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { isAuthed } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { parseIdList } from "@/lib/view-helpers";
-import { ViewsManager } from "@/components/views-manager";
+import { ViewsList } from "@/components/views-list";
 
 /**
- * Owner-only management surface for shareable Views. Lists every saved
- * view, lets the owner add new ones, edit toggles + the project picker,
- * copy share links, and delete views they don't need anymore.
+ * Owner-only list of every saved view. Each row links to /views/[id]
+ * for the visual per-view editor. Inline form removed — view editing
+ * happens in the dedicated editor route.
  */
 export default async function ViewsPage() {
   const owner = await isAuthed();
   if (!owner) redirect("/lock");
 
-  const [viewRows, groupRows] = await Promise.all([
-    prisma.view.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.group.findMany({
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      include: {
-        projects: {
-          where: { parentId: null },
-          orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-          select: { id: true, title: true, slug: true },
+  const viewRows = await prisma.view.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      greeting: true,
+      _count: {
+        select: {
+          groups: true,
+          projects: true,
         },
       },
-    }),
-  ]);
+    },
+  });
 
-  // Normalize the Json columns to string arrays so the client component
-  // can treat them as plain typed data.
   const views = viewRows.map((v) => ({
     id: v.id,
     slug: v.slug,
     name: v.name,
     greeting: v.greeting,
-    showAbout: v.showAbout,
-    showProjects: v.showProjects,
-    projectIds: parseIdList(v.projectIds),
-    groupIds: parseIdList(v.groupIds),
-    createdAt: v.createdAt.toISOString(),
-  }));
-
-  const groups = groupRows.map((g) => ({
-    id: g.id,
-    name: g.name,
-    projects: g.projects.map((p) => ({
-      id: p.id,
-      title: p.title || "Untitled",
-      slug: p.slug,
-    })),
+    groupCount: v._count.groups,
+    projectCount: v._count.projects,
   }));
 
   return (
@@ -68,14 +54,14 @@ export default async function ViewsPage() {
           Views
         </h1>
         <p className="max-w-2xl text-[13px] text-muted">
-          Create different presentations of your portfolio and share the
-          right one with the right person. Each view has a unique URL —
-          recipients see only what you toggled on.
+          Each view is a fresh copy of your portfolio that you can edit
+          independently. Share the URL of the view that suits the
+          audience — recipients see whatever you curated there.
         </p>
       </header>
 
       <div className="mt-10">
-        <ViewsManager initialViews={views} groups={groups} />
+        <ViewsList initialViews={views} />
       </div>
     </main>
   );

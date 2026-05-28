@@ -27,6 +27,15 @@ import type {
   GalleryProject,
 } from "@/components/gallery-types";
 import { uploadMedia } from "@/lib/media-utils";
+import {
+  groupUrl,
+  groupsBase,
+  groupsReorder,
+  projectUrl,
+  projectsReorder,
+  type GalleryScope,
+  MAIN_SCOPE,
+} from "@/lib/gallery-scope";
 
 const SAVE_DEBOUNCE_MS = 350;
 
@@ -44,10 +53,18 @@ export function Gallery({
   initial,
   owner,
   previewing = false,
+  scope = MAIN_SCOPE,
+  disableLinks = false,
 }: {
   initial: GalleryGroup[];
   owner: boolean;
   previewing?: boolean;
+  /** Routes every read/write to the right API: main page (default) or a
+   *  per-view editor. Same shape on both endpoints. */
+  scope?: GalleryScope;
+  /** True in the view editor: tile slugs are view-scoped, not canonical
+   *  Project slugs, so we suppress every "/projects/[slug]" link. */
+  disableLinks?: boolean;
 }) {
   const router = useRouter();
   const editable = owner && !previewing;
@@ -88,7 +105,7 @@ export function Gallery({
           projectIds: g.projects.map((p) => p.id),
         })),
       };
-      void fetch("/api/projects/reorder", {
+      void fetch(projectsReorder(scope), {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
@@ -97,7 +114,7 @@ export function Gallery({
   };
 
   const persistGroupOrder = () => {
-    void fetch("/api/groups/reorder", {
+    void fetch(groupsReorder(scope), {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -233,7 +250,7 @@ export function Gallery({
         .flatMap((g) => g.projects)
         .find((p) => p.id === id);
       if (!project) return;
-      void fetch(`/api/projects/${id}`, {
+      void fetch(projectUrl(scope, id), {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -270,7 +287,7 @@ export function Gallery({
       }))
     );
     try {
-      const res = await fetch(`/api/projects/${id}`, {
+      const res = await fetch(projectUrl(scope, id), {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ hasAudio: next }),
@@ -311,7 +328,7 @@ export function Gallery({
         ),
       }))
     );
-    void fetch(`/api/projects/${id}`, {
+    void fetch(projectUrl(scope, id), {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -333,7 +350,7 @@ export function Gallery({
       }))
     );
     try {
-      const res = await fetch(`/api/projects/${id}`, {
+      const res = await fetch(projectUrl(scope, id), {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ isOpenable: true, title, slug: title }),
@@ -366,7 +383,7 @@ export function Gallery({
       }))
     );
     try {
-      const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+      const res = await fetch(projectUrl(scope, id), { method: "DELETE" });
       if (!res.ok) setGroups(snapshot);
     } catch {
       setGroups(snapshot);
@@ -378,7 +395,7 @@ export function Gallery({
     setGroups((cur) =>
       cur.map((g) => (g.id === groupId ? { ...g, name } : g))
     );
-    await fetch(`/api/groups/${groupId}`, {
+    await fetch(groupUrl(scope, groupId), {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ name }),
@@ -389,7 +406,7 @@ export function Gallery({
     const snapshot = groups;
     setGroups((cur) => cur.filter((g) => g.id !== groupId));
     try {
-      const res = await fetch(`/api/groups/${groupId}`, { method: "DELETE" });
+      const res = await fetch(groupUrl(scope, groupId), { method: "DELETE" });
       if (!res.ok) setGroups(snapshot);
       else router.refresh();
     } catch {
@@ -398,7 +415,7 @@ export function Gallery({
   };
 
   const handleSectionCreate = async () => {
-    const res = await fetch("/api/groups", {
+    const res = await fetch(groupsBase(scope), {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ name: "Untitled" }),
@@ -461,6 +478,8 @@ export function Gallery({
             <GallerySection
               key={g.id}
               group={g}
+              scope={scope}
+              disableLinks={disableLinks}
               onRename={(name) => void handleSectionRename(g.id, name)}
               onDelete={() => void handleSectionDelete(g.id)}
               onProjectDelete={(id) => void handleProjectDelete(id)}
