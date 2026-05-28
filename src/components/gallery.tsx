@@ -338,6 +338,31 @@ export function Gallery({
     });
   };
 
+  /** Flip a promoted project back to "media tile" mode. Title is kept
+   *  on the row so the owner can re-promote with the same name later
+   *  by clicking the folder chip again. */
+  const handleDemote = async (id: string) => {
+    const snapshot = groups;
+    setGroups((cur) =>
+      cur.map((g) => ({
+        ...g,
+        projects: g.projects.map((p) =>
+          p.id === id ? { ...p, isOpenable: false } : p
+        ),
+      }))
+    );
+    try {
+      const res = await fetch(projectUrl(scope, id), {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isOpenable: false }),
+      });
+      if (!res.ok) throw new Error(`save failed (${res.status})`);
+    } catch {
+      setGroups(snapshot);
+    }
+  };
+
   const handlePromote = async (id: string, title: string) => {
     const snapshot = groups;
     // Optimistic flip — show the new title and the projecty state immediately.
@@ -487,6 +512,7 @@ export function Gallery({
               onProjectResizeCommit={projectsResizeCommitGroup}
               onProjectToggleAudio={(id) => void handleToggleAudio(id)}
               onProjectPromote={(id, title) => void handlePromote(id, title)}
+              onProjectDemote={(id) => void handleDemote(id)}
               onProjectReplaceCover={(id, file) => void handleReplaceCover(id, file)}
             />
           ))}

@@ -120,9 +120,12 @@ type OwnerProps = CommonProps & {
   /** Flip the per-tile "has audio worth surfacing" flag. */
   onToggleAudio: () => void;
   /** Promote a media tile to a project — sets isOpenable=true and stores
-   *  the new title. Once promoted, a tile can't be demoted from the chip
-   *  (button is disabled); deleting the row is the way out. */
+   *  the new title. */
   onPromote: (title: string) => void;
+  /** Demote a promoted project back to media-tile state — flips
+   *  isOpenable=false. Title is kept so the owner can re-promote with
+   *  the same name later. */
+  onDemote: () => void;
   /** Swap the cover for an uploaded file. Caller handles the upload +
    *  poster extraction + PUT. */
   onReplaceCover: (file: File) => void;
@@ -146,6 +149,7 @@ export function SortableGalleryCard({
   onResizeCommit,
   onToggleAudio,
   onPromote,
+  onDemote,
   onReplaceCover,
 }: OwnerProps) {
   const sortable = useSortable({
@@ -378,17 +382,20 @@ export function SortableGalleryCard({
           />
         </button>
       )}
-      {/* Folder chip — opens an inline name input next to itself. For a
-          media tile this promotes it to a project (sets title + isOpenable).
-          For an already-promoted project it just renames. Visitors never
-          see this chip (owner chrome only). The filled background means
-          "already a project," outline means "still a media tile." */}
+      {/* Folder chip — a true on/off toggle.
+            • Not promoted (outline): single-click opens an inline name
+              input; submitting promotes the tile.
+            • Promoted (filled): single-click immediately demotes back
+              to a media tile (isOpenable=false; title is preserved so
+              re-promoting reuses the same name).
+            • Double-click ALWAYS opens the rename input — that's how a
+              promoted tile gets renamed without losing the toggle. */}
       {!renaming && (
         <button
           type="button"
           aria-label={
             promotedAlready
-              ? "Rename this project"
+              ? "Demote to media tile (double-click to rename)"
               : "Promote to a project"
           }
           aria-pressed={promotedAlready}
@@ -396,11 +403,23 @@ export function SortableGalleryCard({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (promotedAlready) {
+              onDemote();
+            } else {
+              startRename();
+            }
+          }}
+          onDoubleClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Promoted tiles need a way to rename without un-promoting;
+            // double-click is the gesture. Outline tiles just open the
+            // rename input either way.
             startRename();
           }}
           title={
             promotedAlready
-              ? "Rename this project"
+              ? "Click to remove project · double-click to rename"
               : "Click to make this a project"
           }
           className={

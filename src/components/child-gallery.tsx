@@ -205,6 +205,24 @@ export function ChildGallery({
     }
   };
 
+  /** Demote a promoted sub-project back to media-tile mode. */
+  const handleDemote = async (id: string) => {
+    const snapshot = projects;
+    setProjects((cur) =>
+      cur.map((p) => (p.id === id ? { ...p, isOpenable: false } : p))
+    );
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isOpenable: false }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setProjects(snapshot);
+    }
+  };
+
   // Visitor view — static grid, no chrome.
   if (!editable) {
     if (projects.length === 0) return null;
@@ -256,6 +274,7 @@ export function ChildGallery({
                 onResizeCommit={() => handleResizeCommit(p.id)}
                 onToggleAudio={() => void handleToggleAudio(p.id)}
                 onPromote={(title) => void handlePromote(p.id, title)}
+                onDemote={() => void handleDemote(p.id)}
                 onReplaceCover={(file) => void handleReplaceCover(p.id, file)}
                 spanClass="animate-fade-rise"
                 spanStyle={spanStyle(p.colSpan, p.rowSpan)}
