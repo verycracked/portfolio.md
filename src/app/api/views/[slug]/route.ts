@@ -15,12 +15,12 @@ type Patch = {
 
 export async function PUT(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { id } = await params;
+  const { slug: id } = await params;
   const data = (await req.json()) as Patch;
 
   const update: Record<string, unknown> = {};
@@ -59,12 +59,12 @@ export async function PUT(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { id } = await params;
+  const { slug: id } = await params;
   await prisma.view.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

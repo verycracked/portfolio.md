@@ -7,12 +7,12 @@ import { prisma } from "@/lib/prisma";
  *  intro copy independent of `human.md`. */
 export async function PUT(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { id } = await params;
+  const { slug: id } = await params;
   const data = (await req.json()) as { aboutBody?: string };
   if (typeof data.aboutBody !== "string") {
     return NextResponse.json(

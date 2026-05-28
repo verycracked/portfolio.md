@@ -21,7 +21,7 @@ type Patch = {
  *  can call through the gallery-scope helper without branching. */
 export async function PUT(
   req: Request,
-  { params }: { params: Promise<{ id: string; pid: string }> }
+  { params }: { params: Promise<{ slug: string; pid: string }> }
 ) {
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -61,7 +61,7 @@ export async function PUT(
 /** DELETE — remove a ViewProject (cascades to its children). */
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<{ id: string; pid: string }> }
+  { params }: { params: Promise<{ slug: string; pid: string }> }
 ) {
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

@@ -7,7 +7,7 @@ type Patch = { name?: string };
 /** PUT — rename. Slug stays stable. */
 export async function PUT(
   req: Request,
-  { params }: { params: Promise<{ id: string; gid: string }> }
+  { params }: { params: Promise<{ slug: string; gid: string }> }
 ) {
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -26,7 +26,7 @@ export async function PUT(
 /** DELETE — cascade removes all ViewProject rows in this section. */
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<{ id: string; gid: string }> }
+  { params }: { params: Promise<{ slug: string; gid: string }> }
 ) {
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

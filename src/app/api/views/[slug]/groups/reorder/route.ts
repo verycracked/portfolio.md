@@ -5,12 +5,12 @@ import { prisma } from "@/lib/prisma";
 /** POST — reorder sections within a view. Body: `{ ids: [string,…] }`. */
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { id: viewId } = await params;
+  const { slug: viewId } = await params;
   const body = (await req.json().catch(() => ({}))) as { ids?: unknown };
   if (!Array.isArray(body.ids) || body.ids.some((x) => typeof x !== "string")) {
     return NextResponse.json(
