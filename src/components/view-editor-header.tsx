@@ -82,11 +82,14 @@ export function ViewEditorHeader({
     setName(next);
     // Server auto-derives a new slug from the renamed view. Mirror it
     // back into local state so the slug-input below the h1 and the
-    // share URL stay in lock-step with what visitors will see.
+    // share URL stay in lock-step with what visitors will see, AND
+    // rewrite the URL bar so the editor route reflects the rename
+    // (e.g. /views/workos when the view is named "WorkOS").
     debouncedSaveView({ name: next }, (updated) => {
       if (updated.slug && updated.slug !== slug) {
         setSlug(updated.slug);
         setSlugDraft(updated.slug);
+        router.replace(`/views/${updated.slug}`);
       }
     });
   };
@@ -126,6 +129,9 @@ export function ViewEditorHeader({
     setSlugError(null);
     setSlug(final);
     setSlugDraft(final);
+    // Keep the URL bar in sync with the now-canonical slug so a
+    // bookmark / browser refresh resolves to the same view.
+    router.replace(`/views/${final}`);
   };
 
   const copyShareLink = async () => {

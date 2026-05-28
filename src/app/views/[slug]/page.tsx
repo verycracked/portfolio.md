@@ -24,18 +24,18 @@ export default async function ViewEditPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ edit?: string }>;
 }) {
   const owner = await isAuthed();
   if (!owner) redirect("/lock");
-  const { id } = await params;
+  const { slug } = await params;
   const { edit } = await searchParams;
   const editing = edit === "1";
 
   const [view, settings] = await Promise.all([
     prisma.view.findUnique({
-      where: { id },
+      where: { slug },
       include: {
         groups: {
           orderBy: [{ order: "asc" }, { createdAt: "asc" }],
@@ -104,7 +104,7 @@ export default async function ViewEditPage({
     return (
       <main className="relative mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
         <Link
-          href={`/views/${id}`}
+          href={`/views/${view.slug}`}
           className="mb-6 inline-flex items-center gap-1 text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
         >
           <ArrowLeft size={11} weight="bold" aria-hidden />
@@ -147,7 +147,7 @@ export default async function ViewEditPage({
             NomoEditor. */}
         <div className="mt-4">
           <Link
-            href={`/views/${id}?edit=1`}
+            href={`/views/${view.slug}?edit=1`}
             className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/80 px-2 py-1 text-[11px] text-muted hover:border-border hover:text-fg"
           >
             Edit text
