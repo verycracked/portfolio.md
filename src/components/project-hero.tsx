@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react/dist/ssr";
+import { SpeakerSlash } from "@phosphor-icons/react/dist/ssr";
 
 type Props = {
   src: string;
@@ -81,18 +81,6 @@ export function ProjectHero({ src, posterUrl, ariaLabel }: Props) {
           <SpeakerSlash size={14} weight="fill" aria-hidden />
           Tap to unmute
         </button>
-      )}
-      {!muted && (
-        // When audio is on, fade out the unmute chip but keep a small
-        // confirmation glance for the first second so the viewer knows
-        // they're hearing the real thing.
-        <span
-          aria-hidden
-          className="pointer-events-none absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-[12px] font-medium text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-80"
-        >
-          <SpeakerHigh size={14} weight="fill" aria-hidden />
-          Audio on
-        </span>
       )}
     </div>
   );
