@@ -31,12 +31,17 @@ export type GalleryGroup = {
 };
 
 /**
- * Every gallery tile is now a perfect square, single uniform size.
- * The old col/row span fields stay on the row for back-compat (and so
- * existing data doesn't blow up), but the public face is one shape.
- * `spanClass` is kept so callers don't all need to change at once —
- * it just returns the square-aspect utility regardless of inputs.
+ * Two tile shapes:
+ *   • `colSpan === 1` → 1 column wide, perfect square (aspect-square)
+ *   • `colSpan === 2` → 2 columns wide, 2:1 wide rectangle so the row
+ *     height still matches the neighboring squares (no jagged tracks).
+ *
+ * `rowSpan` is preserved on the row for back-compat but doesn't affect
+ * the rendered shape anymore — vertical sizing comes from the aspect
+ * ratio of whichever shape was chosen. Resize handle in the editor
+ * snaps to one of these two presets.
  */
-export function spanClass(_colSpan: number, _rowSpan: number): string {
+export function spanClass(colSpan: number, _rowSpan: number): string {
+  if (colSpan >= 2) return "sm:col-span-2 sm:aspect-[2/1]";
   return "aspect-square";
 }

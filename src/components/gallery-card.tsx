@@ -202,29 +202,27 @@ export function SortableGalleryCard({
     const node = cellRef.current;
     const rect = node.getBoundingClientRect();
     const startCol = project.colSpan;
-    const startRow = project.rowSpan;
+    // Width of a single column: for a span-2 tile, total width spans
+    // both columns + the gap between them, so divide by startCol to
+    // back out the per-column footprint.
     const cellW = rect.width / startCol;
-    const cellH = rect.height / startRow;
     const anchorX = rect.right;
-    const anchorY = rect.bottom;
 
     const handleMove = (ev: PointerEvent) => {
       const dx = ev.clientX - anchorX;
-      const dy = ev.clientY - anchorY;
+      // Only horizontal direction matters now — vertical size follows
+      // the chosen shape's aspect ratio (square at colSpan=1, 2:1 at
+      // colSpan=2). Snap thresholds at 40% of a column.
       const nextCol =
         startCol === 1 && dx > cellW * 0.4
           ? 2
           : startCol === 2 && dx < -cellW * 0.4
             ? 1
             : startCol;
-      const nextRow =
-        startRow === 1 && dy > cellH * 0.4
-          ? 2
-          : startRow === 2 && dy < -cellH * 0.4
-            ? 1
-            : startRow;
-      if (nextCol !== project.colSpan || nextRow !== project.rowSpan) {
-        onResize(nextCol, nextRow);
+      // rowSpan is always 1 — kept on the row only because the column
+      // still exists in the DB and the API accepts it.
+      if (nextCol !== project.colSpan || project.rowSpan !== 1) {
+        onResize(nextCol, 1);
       }
     };
 
@@ -322,7 +320,7 @@ export function SortableGalleryCard({
           e.preventDefault();
           e.stopPropagation();
         }}
-        className="absolute bottom-3 right-3 inline-flex h-7 w-7 cursor-nwse-resize items-center justify-center rounded-[4px] border border-border-soft bg-content/85 text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
+        className="absolute bottom-3 right-3 inline-flex h-7 w-7 cursor-ew-resize items-center justify-center rounded-[4px] border border-border-soft bg-content/85 text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
       >
         <CornersOut size={13} weight="bold" aria-hidden />
       </button>
