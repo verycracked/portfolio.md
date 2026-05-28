@@ -479,10 +479,17 @@ function HeroFrame({
           />
           <span
             aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 text-[15px] font-medium text-white opacity-0 drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)] transition-opacity duration-300 ease-out group-hover/tile:opacity-100"
+            className="pointer-events-none absolute left-1/2 top-1/2 z-10 inline-flex max-w-[80%] -translate-x-1/2 -translate-y-1/2 items-center gap-2 px-4 text-center text-[15px] font-medium text-white opacity-0 drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)] transition-opacity duration-300 ease-out group-hover/tile:opacity-100"
           >
-            Open
-            <ArrowUpRight size={16} weight="bold" />
+            {/* If the tile has a name, show it on hover; otherwise fall
+                back to the generic "Open" verb. Either way the ↗ icon
+                tags the action as a link to a detail page. */}
+            <span className="line-clamp-2">{title?.trim() || "Open"}</span>
+            <ArrowUpRight
+              size={16}
+              weight="bold"
+              className="shrink-0"
+            />
           </span>
         </>
       )}
