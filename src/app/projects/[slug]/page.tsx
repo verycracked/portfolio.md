@@ -5,7 +5,7 @@ import { isAuthed } from "@/lib/auth";
 import { isProjectUnlocked } from "@/lib/project-auth";
 import { prisma } from "@/lib/prisma";
 import { ChildGallery } from "@/components/child-gallery";
-import { HeroVideo } from "@/components/hero-video";
+import { ProjectHero } from "@/components/project-hero";
 import { ProjectUnlock } from "@/components/project-unlock";
 import { SkeletonImage } from "@/components/skeleton-image";
 import { FadeIn } from "@/components/fade-in";
@@ -121,7 +121,11 @@ export default async function ProjectDetail({
         >
           <div className="relative aspect-[16/9]">
             {heroIsVideo ? (
-              <HeroVideo
+              // ProjectHero — autoplays with sound when hasAudio is on,
+              // shows native controls so the viewer can pause / unmute;
+              // falls back to muted autoplay if the browser blocks the
+              // unmuted attempt.
+              <ProjectHero
                 src={project.heroImageUrl}
                 posterUrl={project.posterUrl ?? null}
                 ariaLabel={project.title}
