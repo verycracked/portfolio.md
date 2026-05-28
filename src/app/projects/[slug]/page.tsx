@@ -121,15 +121,14 @@ export default async function ProjectDetail({
         >
           <div className="relative aspect-[16/9]">
             {heroIsVideo ? (
-              // ProjectHero — autoplays with sound when hasAudio is on,
-              // shows native controls so the viewer can pause / unmute;
-              // falls back to muted autoplay if the browser blocks the
-              // unmuted attempt.
+              // ProjectHero — always tries unmuted autoplay; falls back
+              // to muted + a "Tap to unmute" chip if the browser blocks
+              // unmuted autoplay (which is common without a recent user
+              // gesture). Native controls let the viewer pause or scrub.
               <ProjectHero
                 src={project.heroImageUrl}
                 posterUrl={project.posterUrl ?? null}
                 ariaLabel={project.title}
-                hasAudio={project.hasAudio}
               />
             ) : (
               <SkeletonImage
