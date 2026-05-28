@@ -456,7 +456,7 @@ function HeroFrame({
   openOverlay?: boolean;
 }) {
   return (
-    <div className="relative aspect-[16/10] flex-1 overflow-hidden rounded-[6px] border border-border bg-hover sm:aspect-auto">
+    <div className="relative flex-1 overflow-hidden rounded-[6px] border border-border bg-hover">
       {url ? (
         isVideoUrl(url) ? (
           // HeroVideo plays on hover on desktop; on touch it shows the

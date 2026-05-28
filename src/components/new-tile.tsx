@@ -141,7 +141,7 @@ export function NewTile(props: Props) {
         <div className="relative z-[1] flex flex-1 flex-col gap-2 p-1">
           <div
             className={
-              "flex aspect-[16/10] flex-1 flex-col items-center justify-center gap-2 rounded-[6px] border border-dashed transition-colors " +
+              "flex aspect-square flex-col items-center justify-center gap-2 rounded-[6px] border border-dashed transition-colors " +
               (dragOver
                 ? "border-fg bg-fg/[0.06] text-fg"
                 : "border-border bg-hover text-muted")
