@@ -89,7 +89,7 @@ export function ViewEditorHeader({
       if (updated.slug && updated.slug !== slug) {
         setSlug(updated.slug);
         setSlugDraft(updated.slug);
-        router.replace(`/views/${updated.slug}`);
+        router.replace(`/v/${updated.slug}`);
       }
     });
   };
@@ -131,7 +131,7 @@ export function ViewEditorHeader({
     setSlugDraft(final);
     // Keep the URL bar in sync with the now-canonical slug so a
     // bookmark / browser refresh resolves to the same view.
-    router.replace(`/views/${final}`);
+    router.replace(`/v/${final}`);
   };
 
   const copyShareLink = async () => {
@@ -205,7 +205,7 @@ export function ViewEditorHeader({
         <div className="flex items-center gap-2 text-[12px]">
           <SaveStatusBadge state={tracker.state} />
           <a
-            href={`/v/${slug}`}
+            href={`/v/${slug}?preview=1`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/80 px-2 py-1 text-muted hover:border-border hover:text-fg"
