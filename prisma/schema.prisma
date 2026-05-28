@@ -7,6 +7,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// A curated *version* of the portfolio at a shareable URL like `/v/[slug]`.
+// Lets the owner build different presentations for different audiences:
+// e.g. a hiring manager gets the full site, a friend gets a projects-only
+// view, etc. The owner side lives at /views.
+model View {
+  id           String   @id @default(cuid())
+  // URL slug — `/v/<slug>` resolves to this view. Kept distinct from
+  // `name` so the owner can rename without breaking shared links.
+  slug         String   @unique
+  // Owner-facing label, e.g. "Hiring managers" or "Friends".
+  name         String
+  // Optional one-liner for the share-banner at the top of the public
+  // view. Lets the owner say hi to whoever they shared the link with.
+  greeting     String   @default("")
+  // Toggle the "about" content (markdown body + avatar) at the top of
+  // the homepage. False = a projects-only / portfolio-only view.
+  showAbout    Boolean  @default(true)
+  // Toggle the projects gallery. False = an about-only view.
+  showProjects Boolean  @default(true)
+  // Optional whitelist of project IDs (empty array = show all). Stored
+  // as a JSON array so we can filter both top-level tiles and inside
+  // groups without an extra join table.
+  projectIds   Json     @default("[]")
+  // Optional whitelist of group IDs (empty array = show all).
+  groupIds     Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([slug])
+}
+
 // A named group of project tiles on the homepage gallery, e.g. "CodeRabbit",
 // "Trustlists". Every project belongs to exactly one group; we always have at
 // least the auto-seeded "Untitled" group available as a default home for

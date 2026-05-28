@@ -10,6 +10,7 @@ import {
   EyeSlash,
   Gear,
   Link as LinkIcon,
+  ShareNetwork,
 } from "@phosphor-icons/react/dist/ssr";
 
 /**
@@ -95,6 +96,14 @@ export function OwnerToolbar() {
           </>
         )}
       </button>
+      <Link
+        href="/views"
+        aria-label="Manage views"
+        title="Manage views"
+        className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-border-soft bg-content/80 text-muted backdrop-blur transition-colors hover:border-border hover:text-fg"
+      >
+        <ShareNetwork size={13} weight="bold" aria-hidden />
+      </Link>
       <Link
         href="/settings"
         aria-label="Settings"

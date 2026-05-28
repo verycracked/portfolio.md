@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+import { isAuthed } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { uniqueViewSlug } from "@/lib/view-helpers";
+
+type Patch = {
+  name?: string;
+  slug?: string;
+  greeting?: string;
+  showAbout?: boolean;
+  showProjects?: boolean;
+  projectIds?: string[];
+  groupIds?: string[];
+};
+
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!(await isAuthed())) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const { id } = await params;
+  const data = (await req.json()) as Patch;
+
+  const update: Record<string, unknown> = {};
+  if (data.name !== undefined) update.name = data.name;
+  if (data.greeting !== undefined) update.greeting = data.greeting;
+  if (data.showAbout !== undefined) update.showAbout = Boolean(data.showAbout);
+  if (data.showProjects !== undefined) {
+    update.showProjects = Boolean(data.showProjects);
+  }
+  if (data.projectIds !== undefined) {
+    update.projectIds = Array.isArray(data.projectIds)
+      ? data.projectIds.filter((s) => typeof s === "string")
+      : [];
+  }
+  if (data.groupIds !== undefined) {
+    update.groupIds = Array.isArray(data.groupIds)
+      ? data.groupIds.filter((s) => typeof s === "string")
+      : [];
+  }
+  if (data.slug !== undefined) {
+    update.slug = await uniqueViewSlug(data.slug, id);
+  }
+
+  const view = await prisma.view.update({ where: { id }, data: update });
+  return NextResponse.json(view);
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!(await isAuthed())) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const { id } = await params;
+  await prisma.view.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}
