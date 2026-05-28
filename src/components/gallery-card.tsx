@@ -476,8 +476,13 @@ function HeroFrame({
             // softens text + edges visibly. Serve the raw PNG/JPEG so the
             // gallery stays pixel-perfect at the cost of a heavier payload.
             unoptimized
+            // `object-contain` so the entire image is visible inside the
+            // tile — fits to whichever dimension is constraining (usually
+            // width). The leftover space takes on the parent's bg-hover
+            // color so it reads as intentional matting rather than a
+            // cropped screenshot.
             className={
-              "object-cover transition-[filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
+              "object-contain transition-[filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
               (openOverlay ? "group-hover/tile:blur-[3px]" : "")
             }
           />

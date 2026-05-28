@@ -153,7 +153,7 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props
               // Blur only when the Play CTA is overlaid; otherwise leave
               // the poster crisp so it reads as a real still image.
               className={
-                "object-cover " + (hasAudio ? "blur-[3px]" : "")
+                "object-contain " + (hasAudio ? "blur-[3px]" : "")
               }
               draggable={false}
             />
@@ -229,7 +229,7 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props
             openTheater();
           }}
           className={
-            "h-full w-full object-cover transition-[filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
+            "h-full w-full object-contain transition-[filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
             (hasAudio ? "group-hover:blur-[3px]" : "")
           }
         />
