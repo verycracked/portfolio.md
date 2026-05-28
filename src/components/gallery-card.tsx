@@ -13,11 +13,12 @@ import {
   Image as ImageIcon,
   Lock,
   Play,
+  UploadSimple,
   X,
 } from "@phosphor-icons/react/dist/ssr";
 import { HeroVideo } from "@/components/hero-video";
 import { SkeletonImage } from "@/components/skeleton-image";
-import { isVideoUrl } from "@/lib/media";
+import { MEDIA_ACCEPT, isVideoUrl } from "@/lib/media";
 import type { GalleryProject } from "@/components/gallery-types";
 
 // Sizes hint for the bento grid: ≥640px = at most half the 1280px content
@@ -104,6 +105,9 @@ type OwnerProps = CommonProps & {
    *  the new title. Once promoted, a tile can't be demoted from the chip
    *  (button is disabled); deleting the row is the way out. */
   onPromote: (title: string) => void;
+  /** Swap the cover for an uploaded file. Caller handles the upload +
+   *  poster extraction + PUT. */
+  onReplaceCover: (file: File) => void;
 };
 
 /**
@@ -122,12 +126,14 @@ export function SortableGalleryCard({
   onResizeCommit,
   onToggleAudio,
   onPromote,
+  onReplaceCover,
 }: OwnerProps) {
   const sortable = useSortable({
     id: project.id,
     data: { kind: "tile" },
   });
   const cellRef = useRef<HTMLDivElement | null>(null);
+  const replaceInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
   const clickable = project.childCount > 0 || project.isOpenable;
   // Inline rename UX — the ↗ chip below opens this overlay; the user
@@ -266,6 +272,31 @@ export function SortableGalleryCard({
         <DotsSixVertical size={11} weight="bold" aria-hidden />
         Drag
       </span>
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          replaceInputRef.current?.click();
+        }}
+        aria-label="Replace cover"
+        title="Replace cover"
+        className="absolute right-12 top-3 inline-flex h-6 w-6 items-center justify-center rounded-[4px] border border-border-soft bg-content/85 text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
+      >
+        <UploadSimple size={11} weight="bold" aria-hidden />
+      </button>
+      <input
+        ref={replaceInputRef}
+        type="file"
+        accept={MEDIA_ACCEPT}
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onReplaceCover(f);
+          e.target.value = "";
+        }}
+      />
       <button
         type="button"
         onPointerDown={(e) => e.stopPropagation()}

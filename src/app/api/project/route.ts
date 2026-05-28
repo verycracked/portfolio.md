@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { isAuthed } from "@/lib/auth";
+import { isOwnerOrBearer } from "@/lib/extension-auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
-  if (!(await isAuthed())) {
+export async function GET(req: Request) {
+  // Accept either the owner cookie or a Snapshot extension bearer token —
+  // the extension needs this list to let the user pick a destination
+  // project when saving a screenshot.
+  if (!(await isOwnerOrBearer(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

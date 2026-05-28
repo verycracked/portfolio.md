@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import { isAuthed } from "@/lib/auth";
+import { isOwnerOrBearer } from "@/lib/extension-auth";
 import { prisma } from "@/lib/prisma";
 import { isValidSlug } from "@/lib/slug";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  if (!(await isAuthed())) {
+  // Same auth as the list route — the extension reads this when the user
+  // picks an existing project to attach a screenshot to.
+  if (!(await isOwnerOrBearer(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

@@ -18,6 +18,7 @@ import {
 } from "@/components/gallery-card";
 import { NewTile } from "@/components/new-tile";
 import { spanClass, type GalleryProject } from "@/components/gallery-types";
+import { uploadMedia } from "@/lib/media-utils";
 
 const SAVE_DEBOUNCE_MS = 350;
 
@@ -158,6 +159,29 @@ export function ChildGallery({
     }
   };
 
+  const handleReplaceCover = async (id: string, file: File) => {
+    const uploaded = await uploadMedia(file);
+    if (!uploaded) {
+      alert(`Couldn't upload ${file.name}`);
+      return;
+    }
+    setProjects((cur) =>
+      cur.map((p) =>
+        p.id === id
+          ? { ...p, heroImageUrl: uploaded.url, posterUrl: uploaded.posterUrl }
+          : p
+      )
+    );
+    void fetch(`/api/projects/${id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        heroImageUrl: uploaded.url,
+        posterUrl: uploaded.posterUrl,
+      }),
+    });
+  };
+
   const handlePromote = async (id: string, title: string) => {
     const snapshot = projects;
     setProjects((cur) =>
@@ -224,6 +248,7 @@ export function ChildGallery({
               onResizeCommit={() => handleResizeCommit(p.id)}
               onToggleAudio={() => void handleToggleAudio(p.id)}
               onPromote={(title) => void handlePromote(p.id, title)}
+              onReplaceCover={(file) => void handleReplaceCover(p.id, file)}
               spanClass={`animate-fade-rise ${spanClass(p.colSpan, p.rowSpan)}`}
               revealDelayMs={i * 60}
             />

@@ -31,6 +31,7 @@ type OwnerProps = CommonProps & {
   onProjectResizeCommit: (id: string) => void;
   onProjectToggleAudio: (id: string) => void;
   onProjectPromote: (id: string, title: string) => void;
+  onProjectReplaceCover: (id: string, file: File) => void;
 };
 
 /**
@@ -47,6 +48,7 @@ export function GallerySection({
   onProjectResizeCommit,
   onProjectToggleAudio,
   onProjectPromote,
+  onProjectReplaceCover,
 }: OwnerProps) {
   // The section as a whole is sortable (header is the drag handle).
   const sortable = useSortable({
@@ -104,6 +106,7 @@ export function GallerySection({
               onResizeCommit={() => onProjectResizeCommit(p.id)}
               onToggleAudio={() => onProjectToggleAudio(p.id)}
               onPromote={(title) => onProjectPromote(p.id, title)}
+              onReplaceCover={(file) => onProjectReplaceCover(p.id, file)}
               spanClass={spanClass(p.colSpan, p.rowSpan)}
             />
           ))}

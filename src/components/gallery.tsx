@@ -26,6 +26,7 @@ import type {
   GalleryGroup,
   GalleryProject,
 } from "@/components/gallery-types";
+import { uploadMedia } from "@/lib/media-utils";
 
 const SAVE_DEBOUNCE_MS = 350;
 
@@ -287,6 +288,39 @@ export function Gallery({
     }
   };
 
+  const handleReplaceCover = async (id: string, file: File) => {
+    // Upload first (poster extracted client-side for videos), then PUT
+    // both URLs onto the project. No optimistic update — we don't know
+    // the new R2 URL until the upload completes.
+    const uploaded = await uploadMedia(file);
+    if (!uploaded) {
+      alert(`Couldn't upload ${file.name}`);
+      return;
+    }
+    setGroups((cur) =>
+      cur.map((g) => ({
+        ...g,
+        projects: g.projects.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                heroImageUrl: uploaded.url,
+                posterUrl: uploaded.posterUrl,
+              }
+            : p
+        ),
+      }))
+    );
+    void fetch(`/api/projects/${id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        heroImageUrl: uploaded.url,
+        posterUrl: uploaded.posterUrl,
+      }),
+    });
+  };
+
   const handlePromote = async (id: string, title: string) => {
     const snapshot = groups;
     // Optimistic flip — show the new title and the projecty state immediately.
@@ -434,6 +468,7 @@ export function Gallery({
               onProjectResizeCommit={projectsResizeCommitGroup}
               onProjectToggleAudio={(id) => void handleToggleAudio(id)}
               onProjectPromote={(id, title) => void handlePromote(id, title)}
+              onProjectReplaceCover={(id, file) => void handleReplaceCover(id, file)}
             />
           ))}
         </div>
