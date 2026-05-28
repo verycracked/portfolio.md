@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useTransition } from "react";
 import clsx from "clsx";
 
 type TabItem = {
@@ -30,11 +33,15 @@ function hrefFor(projectSlug: string, slug: string, previewing?: boolean) {
 }
 
 /**
- * Read-only surface tab bar used on the public project page. Each tab is a
- * Next.js <Link>, so navigation is a real route change. The active tab wears
- * the project-wide `.double-stroke` selection treatment (Paper-style): dark
- * hairline ring + soft drop shadow + a 1px inner radial highlight that rests
- * in the top-lit position. Inactive tabs are flat hover targets.
+ * Surface tab bar used on the public project page. Each tab is a real
+ * Next.js <Link> so the route actually changes, but the active state is
+ * tracked optimistically on click: the indicator slides the moment the
+ * user clicks, well before the new server component finishes streaming.
+ *
+ * Sizing: every tab is rendered at the SAME width (the width of the
+ * widest label) so the bar doesn't shift as the active marker moves
+ * between tabs. The marker's border / shadow treatment also stays put,
+ * which is what makes the swap feel smooth.
  */
 export function SurfaceTabBar({
   projectSlug,
@@ -42,20 +49,39 @@ export function SurfaceTabBar({
   activeSlug,
   previewing,
 }: Props) {
+  // Optimistic active slug — used so the indicator can jump immediately
+  // on click instead of waiting for the route transition to finish. We
+  // clear it when the URL prop (`activeSlug`) catches up, but until then
+  // the click target wears the active treatment.
+  const [pending, setPending] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  const displayActive = pending ?? activeSlug;
+
   return (
     <nav
       aria-label="Project surfaces"
       className="inline-flex flex-wrap items-center gap-1 rounded-[10px] border border-border-soft bg-content/60 p-1"
     >
       {surfaces.map((surface) => {
-        const active = surface.slug === activeSlug;
+        const active = surface.slug === displayActive;
         return (
           <Link
             key={surface.id}
             href={hrefFor(projectSlug, surface.slug, previewing)}
             aria-current={active ? "page" : undefined}
+            onClick={() => {
+              if (surface.slug === activeSlug) return;
+              // Move the marker now; let React's Transition machinery
+              // handle the actual route swap on a non-blocking lane.
+              startTransition(() => setPending(surface.slug));
+            }}
             className={clsx(
-              "relative inline-flex items-center rounded-[8px] px-3 py-1.5 text-[12px] transition-colors",
+              // Equal-width: every tab is at least 120px and centers its
+              // label, so the bar geometry is identical regardless of
+              // which label is longest. `justify-center` keeps tabs
+              // visually balanced even when the labels are short.
+              "relative inline-flex min-w-[120px] items-center justify-center rounded-[8px] px-3 py-1.5 text-[12px] transition-colors",
               active
                 ? "double-stroke bg-hover font-medium text-fg"
                 : "text-muted hover:text-fg"
