@@ -24,6 +24,8 @@ type Body = {
   hasAudio?: boolean;
   /** Force the homepage tile to be clickable even with no sub-projects. */
   isOpenable?: boolean;
+  /** Vertical framing (0–100) of the hero on the project detail page. */
+  heroOffsetY?: number;
 };
 
 function slugify(input: string) {
@@ -63,6 +65,12 @@ export async function PUT(
   if (data.parentId !== undefined) update.parentId = data.parentId;
   if (data.hasAudio !== undefined) update.hasAudio = Boolean(data.hasAudio);
   if (data.isOpenable !== undefined) update.isOpenable = Boolean(data.isOpenable);
+  if (data.heroOffsetY !== undefined) {
+    const n = Number(data.heroOffsetY);
+    if (Number.isFinite(n)) {
+      update.heroOffsetY = Math.max(0, Math.min(100, n));
+    }
+  }
 
   if (data.password !== undefined) {
     update.passwordHash = data.password ? hashPassword(data.password) : null;

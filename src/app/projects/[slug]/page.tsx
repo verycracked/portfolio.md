@@ -6,6 +6,7 @@ import { isProjectUnlocked } from "@/lib/project-auth";
 import { prisma } from "@/lib/prisma";
 import { ChildGallery } from "@/components/child-gallery";
 import { ProjectHero } from "@/components/project-hero";
+import { ProjectHeroFrame } from "@/components/project-hero-frame";
 import { ProjectUnlock } from "@/components/project-unlock";
 import { SkeletonImage } from "@/components/skeleton-image";
 import { FadeIn } from "@/components/fade-in";
@@ -122,11 +123,9 @@ export default async function ProjectDetail({
       </FadeIn>
 
       {/* Hero — the project's cover, full-bleed across the content area.
-          Image heroes render at their full natural height so the wrapper
-          hugs the image exactly (no max-height letterboxing — that was
-          reading as "empty container space" when the captured asset had
-          dark padding inside it). Videos stay in a fixed 16:10 frame
-          because they're usually authored at that ratio. */}
+          Image and video heroes both render in a fixed 16:10 frame with
+          `object-fit: cover`; the owner can drag image heroes vertically
+          to pan into the right framing (persisted as `heroOffsetY`). */}
       {project.heroImageUrl && (
         <div
           className="animate-fade-rise mt-6 overflow-hidden rounded-[6px] border border-border"
@@ -141,11 +140,12 @@ export default async function ProjectDetail({
               />
             </div>
           ) : (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
+            <ProjectHeroFrame
+              projectId={project.id}
               src={project.heroImageUrl}
               alt={project.title}
-              className="block h-auto w-full"
+              initialOffsetY={project.heroOffsetY ?? 50}
+              owner={owner && !previewing}
             />
           )}
         </div>

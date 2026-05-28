@@ -35,6 +35,11 @@ model Project {
   // time. Used as the <video poster> attribute and as the standalone image
   // on touch devices where we don't autoplay.
   posterUrl     String?
+  // 0–100 — vertical framing for the cover image on the project detail
+  // page. 0 = top of the image is shown, 100 = bottom, 50 = centered.
+  // The image is always rendered at a fixed 16:10 aspect with
+  // object-cover, so any extra height in the source is panned via this.
+  heroOffsetY   Float           @default(50)
   // True when the hero video has meaningful audio worth surfacing — gates
   // the on-tile "Play" CTA and the theater modal entry point. Defaults to
   // false so silent screen recordings stay calm (hover preview only).
