@@ -12,7 +12,22 @@ type Props = {
   projectSlug: string;
   surfaces: TabItem[];
   activeSlug: string;
+  /** When true, append `?preview=1` to every tab href so the visitor-
+   *  preview state survives switching surfaces. */
+  previewing?: boolean;
 };
+
+/** The Overview tab maps to the project detail page itself rather than
+ *  to `/projects/[slug]/overview` — that keeps the main page and the
+ *  Overview surface from feeling like two separate views. Non-overview
+ *  surfaces keep their nested URL. */
+function hrefFor(projectSlug: string, slug: string, previewing?: boolean) {
+  const base =
+    slug === "overview"
+      ? `/projects/${projectSlug}`
+      : `/projects/${projectSlug}/${slug}`;
+  return previewing ? `${base}?preview=1` : base;
+}
 
 /**
  * Read-only surface tab bar used on the public project page. Each tab is a
@@ -25,6 +40,7 @@ export function SurfaceTabBar({
   projectSlug,
   surfaces,
   activeSlug,
+  previewing,
 }: Props) {
   return (
     <nav
@@ -36,7 +52,7 @@ export function SurfaceTabBar({
         return (
           <Link
             key={surface.id}
-            href={`/projects/${projectSlug}/${surface.slug}`}
+            href={hrefFor(projectSlug, surface.slug, previewing)}
             aria-current={active ? "page" : undefined}
             className={clsx(
               "relative inline-flex items-center rounded-[8px] px-3 py-1.5 text-[12px] transition-colors",

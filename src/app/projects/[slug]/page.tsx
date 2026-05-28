@@ -8,6 +8,7 @@ import { ChildGallery } from "@/components/child-gallery";
 import { ProjectHero } from "@/components/project-hero";
 import { ProjectHeroFrame } from "@/components/project-hero-frame";
 import { OwnerToolbar } from "@/components/owner-toolbar";
+import { SurfaceTabBar } from "@/components/surface-tab-bar";
 import { ProjectUnlock } from "@/components/project-unlock";
 import { SkeletonImage } from "@/components/skeleton-image";
 import { FadeIn } from "@/components/fade-in";
@@ -54,6 +55,12 @@ export default async function ProjectDetail({
   const project = await prisma.project.findUnique({
     where: { slug },
     include: {
+      // Drives the tab bar at the top of the page. Every project ships
+      // with an "overview" surface; additional surfaces are owner-added.
+      surfaces: {
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+        select: { id: true, slug: true, name: true },
+      },
       children: {
         orderBy: [{ order: "asc" }, { createdAt: "asc" }],
         select: {
@@ -123,6 +130,24 @@ export default async function ProjectDetail({
           Back
         </Link>
       </FadeIn>
+
+      {/* Surface tabs — only render when the owner has added a custom
+          surface beyond the default Overview. Overview routes back to
+          this same page; the others jump to /projects/[slug]/[surface]. */}
+      {project.surfaces.length > 1 && (
+        <div
+          className="animate-fade-rise mt-6"
+          style={{ ["--reveal-delay" as string]: "20ms" }}
+        >
+          <SurfaceTabBar
+            mode="link"
+            projectSlug={project.slug}
+            activeSlug="overview"
+            surfaces={project.surfaces}
+            previewing={previewing}
+          />
+        </div>
+      )}
 
       {/* Hero — the project's cover, full-bleed across the content area.
           Image and video heroes both render in a fixed 16:10 frame with
