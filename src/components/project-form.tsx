@@ -197,14 +197,6 @@ export function ProjectForm({ project: initial }: { project: Project }) {
         style={{ ["--reveal-delay" as string]: "40ms" }}
       >
         <div className="flex items-center gap-4">
-          <SizePicker
-            colSpan={project.colSpan}
-            rowSpan={project.rowSpan}
-            onChange={(next) => {
-              setProject((p) => ({ ...p, ...next }));
-              void saveProject(project.id, next);
-            }}
-          />
           <ProjectProtectionControl
             projectId={project.id}
             isProtected={project.isProtected}
@@ -336,54 +328,4 @@ export function ProjectForm({ project: initial }: { project: Project }) {
   );
 }
 
-// Bento-size picker for the project card on /portfolio. Compact preset
-// menu so the owner doesn't have to think about col/row spans — just
-// "small", "wide", "tall", "big", etc. Picks render a 2D mini-grid swatch
-// so the visual outcome is obvious before clicking.
-const SIZE_PRESETS: { label: string; col: number; row: number }[] = [
-  { label: "S", col: 1, row: 1 },
-  { label: "Wide", col: 2, row: 1 },
-  { label: "Tall", col: 1, row: 2 },
-  { label: "M", col: 2, row: 2 },
-  { label: "Wider", col: 3, row: 1 },
-  { label: "L", col: 4, row: 1 },
-  { label: "XL", col: 4, row: 2 },
-];
 
-function SizePicker({
-  colSpan,
-  rowSpan,
-  onChange,
-}: {
-  colSpan: number;
-  rowSpan: number;
-  onChange: (next: { colSpan: number; rowSpan: number }) => void;
-}) {
-  return (
-    <div className="flex items-center gap-1.5 text-[11px] text-muted">
-      <span className="text-tertiary">Size</span>
-      <div className="flex items-center gap-1 rounded-[6px] border border-border-soft bg-content/60 p-0.5">
-        {SIZE_PRESETS.map((p) => {
-          const active = p.col === colSpan && p.row === rowSpan;
-          return (
-            <button
-              key={`${p.col}x${p.row}`}
-              type="button"
-              onClick={() => onChange({ colSpan: p.col, rowSpan: p.row })}
-              title={`${p.col}×${p.row} — ${p.label}`}
-              aria-pressed={active}
-              aria-label={`${p.col} columns by ${p.row} rows`}
-              className={
-                active
-                  ? "rounded-[4px] bg-fg/[0.12] px-1.5 py-0.5 font-medium text-fg shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.12)]"
-                  : "rounded-[4px] px-1.5 py-0.5 text-tertiary hover:text-fg"
-              }
-            >
-              {p.col}×{p.row}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
