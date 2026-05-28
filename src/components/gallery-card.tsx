@@ -6,10 +6,10 @@ import { useEffect, useRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ArrowSquareOut,
   ArrowUpRight,
   CornersOut,
   DotsSixVertical,
+  Folder,
   Image as ImageIcon,
   Lock,
   Play,
@@ -319,72 +319,75 @@ export function SortableGalleryCard({
           />
         </button>
       )}
-      {/* Promote-to-project toggle — clicking opens an inline rename
-          overlay (below) and on submit promotes this media tile to a
-          project (sets title + isOpenable). Disabled once promoted —
-          deletion is the way out — and visually marked as on so the
-          owner can see at a glance which tiles are projects. */}
-      <button
-        type="button"
-        aria-label={
-          promotedAlready
-            ? "Already a project"
-            : "Promote to a project"
-        }
-        aria-pressed={promotedAlready}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          startRename();
-        }}
-        title={
-          project.childCount > 0
-            ? "Project — has sub-projects (can't demote)"
-            : project.isOpenable
-              ? "Project — name set"
-              : "Click to make this a project"
-        }
-        disabled={promotedAlready}
-        className={
-          "absolute bottom-3 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 disabled:cursor-default disabled:hover:text-muted " +
-          (project.heroImageUrl && isVideoUrl(project.heroImageUrl)
-            ? "left-12 "
-            : "left-3 ") +
-          (promotedAlready
-            ? "bg-fg/15 text-fg"
-            : "bg-content/85")
-        }
-      >
-        <ArrowSquareOut size={12} weight="bold" aria-hidden />
-      </button>
-      {renaming && (
-        // Inline rename overlay — covers the tile while the input is up so
-        // the user can name the project without leaving the homepage. Esc
-        // cancels, Enter or blur commits. Empty value cancels.
-        <div
-          className="absolute inset-0 z-30 flex items-center justify-center bg-bg/75 px-4 backdrop-blur-sm"
+      {/* Promote-to-project chip — filled folder icon. Click opens a
+          small inline name input right next to the chip; submit promotes
+          this media tile to a project (sets title + isOpenable). Disabled
+          once promoted — deletion is the way out. Visitors never see this
+          chip (owner chrome only). */}
+      {!renaming && (
+        <button
+          type="button"
+          aria-label={
+            promotedAlready
+              ? "Already a project"
+              : "Promote to a project"
+          }
+          aria-pressed={promotedAlready}
           onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startRename();
+          }}
+          title={
+            project.childCount > 0
+              ? "Project — has sub-projects (can't demote)"
+              : project.isOpenable
+                ? "Project — name set"
+                : "Click to make this a project"
+          }
+          disabled={promotedAlready}
+          className={
+            "absolute bottom-3 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 disabled:cursor-default disabled:hover:text-muted " +
+            (project.heroImageUrl && isVideoUrl(project.heroImageUrl)
+              ? "left-12 "
+              : "left-3 ") +
+            (promotedAlready
+              ? "bg-fg/15 text-fg"
+              : "bg-content/85")
+          }
         >
-          <input
-            ref={renameInputRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Name this project…"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                submitRename();
-              } else if (e.key === "Escape") {
-                e.preventDefault();
-                cancelRename();
-              }
-            }}
-            onBlur={submitRename}
-            className="w-full max-w-[260px] rounded-[6px] border border-border bg-content px-3 py-2 text-center text-[14px] font-medium text-fg outline-none placeholder:text-tertiary focus:border-fg"
-          />
-        </div>
+          <Folder size={13} weight="fill" aria-hidden />
+        </button>
+      )}
+      {renaming && (
+        // Small inline name input — sits where the chip was so the
+        // promote interaction stays anchored to the same spot. Enter
+        // commits, Esc or blur cancels (empty value also cancels).
+        <input
+          ref={renameInputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Name…"
+          autoFocus
+          onPointerDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submitRename();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              cancelRename();
+            }
+          }}
+          onBlur={submitRename}
+          className={
+            "absolute bottom-3 z-30 h-7 w-[160px] rounded-[4px] border border-border bg-content/95 px-2 text-[12px] text-fg shadow-[0_4px_12px_-4px_rgb(0_0_0_/_0.4)] outline-none placeholder:text-tertiary backdrop-blur focus:border-fg " +
+            (project.heroImageUrl && isVideoUrl(project.heroImageUrl)
+              ? "left-12"
+              : "left-3")
+          }
+        />
       )}
     </div>
   );
