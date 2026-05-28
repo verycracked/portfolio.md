@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowUpRight, ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { isAuthed } from "@/lib/auth";
 import { isProjectUnlocked } from "@/lib/project-auth";
@@ -78,6 +78,16 @@ export default async function ProjectDetail({
   const unlocked = isProtected ? await isProjectUnlocked(project.id) : true;
   const previewing = preview === "1";
 
+  // Media tiles aren't addressable — only promoted projects (isOpenable
+  // or has children) have a meaningful detail page. Visitors landing on
+  // a media-tile slug get bounced home; owners (not previewing) can still
+  // see the page so they can promote / edit the tile.
+  const isMediaTile =
+    !project.isOpenable && project.children.length === 0;
+  if (isMediaTile && (!owner || previewing)) {
+    redirect(previewing ? "/?preview=1" : "/");
+  }
+
   if (isProtected && !owner && !unlocked) {
     return (
       <ProjectUnlock
@@ -151,7 +161,7 @@ export default async function ProjectDetail({
         style={{ ["--reveal-delay" as string]: "80ms" }}
       >
         <h1 className="text-[28px] font-semibold tracking-tight text-fg">
-          {project.title}
+          {project.title || "Untitled media tile"}
         </h1>
         {project.description && (
           <p className="max-w-3xl text-[14px] text-muted">

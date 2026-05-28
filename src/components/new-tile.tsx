@@ -72,8 +72,11 @@ export function NewTile(props: Props) {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            title: "Untitled",
+            // Empty title = "media tile, not a project". The owner can
+            // promote later by clicking the ↗ chip and naming it.
+            title: "",
             heroImageUrl: url,
+            posterUrl,
             ...target,
           }),
         });
@@ -163,7 +166,13 @@ export function NewTile(props: Props) {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title: "Untitled project", ...target }),
+        body: JSON.stringify({
+          title: "Untitled project",
+          // Blank-create is an explicit "make a project" action — flip
+          // isOpenable on so the new row immediately reads as a project.
+          isOpenable: true,
+          ...target,
+        }),
       });
       if (!res.ok) return;
       const project = (await res.json()) as { id: string };

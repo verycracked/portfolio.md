@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -100,8 +100,10 @@ type OwnerProps = CommonProps & {
   onResizeCommit: () => void;
   /** Flip the per-tile "has audio worth surfacing" flag. */
   onToggleAudio: () => void;
-  /** Flip the per-tile "show detail page" flag. */
-  onToggleOpenable: () => void;
+  /** Promote a media tile to a project — sets isOpenable=true and stores
+   *  the new title. Once promoted, a tile can't be demoted from the chip
+   *  (button is disabled); deleting the row is the way out. */
+  onPromote: (title: string) => void;
 };
 
 /**
@@ -119,7 +121,7 @@ export function SortableGalleryCard({
   onResize,
   onResizeCommit,
   onToggleAudio,
-  onToggleOpenable,
+  onPromote,
 }: OwnerProps) {
   const sortable = useSortable({
     id: project.id,
@@ -128,6 +130,30 @@ export function SortableGalleryCard({
   const cellRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const clickable = project.childCount > 0 || project.isOpenable;
+  // Inline rename UX — the ↗ chip below opens this overlay; the user
+  // names the tile and on submit we promote it to a project.
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState("");
+  const renameInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (renaming) renameInputRef.current?.select();
+  }, [renaming]);
+
+  const promotedAlready = project.isOpenable || project.childCount > 0;
+  const startRename = () => {
+    if (promotedAlready) return;
+    setDraft(project.title || "");
+    setRenaming(true);
+  };
+  const submitRename = () => {
+    const name = draft.trim();
+    setRenaming(false);
+    if (!name) return; // empty → cancel
+    onPromote(name);
+  };
+  const cancelRename = () => {
+    setRenaming(false);
+  };
 
   const setRefs = (node: HTMLDivElement | null) => {
     cellRef.current = node;
@@ -293,44 +319,73 @@ export function SortableGalleryCard({
           />
         </button>
       )}
-      {/* Openable toggle — makes the homepage tile clickable even without
-          sub-projects, so the visitor lands on the project detail page.
-          Auto-on (and disabled) when the tile already has children. Slides
-          right when the audio toggle is also present so they don't stack. */}
+      {/* Promote-to-project toggle — clicking opens an inline rename
+          overlay (below) and on submit promotes this media tile to a
+          project (sets title + isOpenable). Disabled once promoted —
+          deletion is the way out — and visually marked as on so the
+          owner can see at a glance which tiles are projects. */}
       <button
         type="button"
         aria-label={
-          project.isOpenable
-            ? "Hide detail page"
-            : "Make this tile open to a detail page"
+          promotedAlready
+            ? "Already a project"
+            : "Promote to a project"
         }
-        aria-pressed={project.isOpenable}
+        aria-pressed={promotedAlready}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          onToggleOpenable();
+          startRename();
         }}
         title={
           project.childCount > 0
-            ? "Always openable (has sub-projects)"
+            ? "Project — has sub-projects (can't demote)"
             : project.isOpenable
-              ? "Open page enabled — click to disable"
-              : "Click to enable open page"
+              ? "Project — name set"
+              : "Click to make this a project"
         }
-        disabled={project.childCount > 0}
+        disabled={promotedAlready}
         className={
           "absolute bottom-3 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 disabled:cursor-default disabled:hover:text-muted " +
           (project.heroImageUrl && isVideoUrl(project.heroImageUrl)
             ? "left-12 "
             : "left-3 ") +
-          (project.isOpenable || project.childCount > 0
+          (promotedAlready
             ? "bg-fg/15 text-fg"
             : "bg-content/85")
         }
       >
         <ArrowSquareOut size={12} weight="bold" aria-hidden />
       </button>
+      {renaming && (
+        // Inline rename overlay — covers the tile while the input is up so
+        // the user can name the project without leaving the homepage. Esc
+        // cancels, Enter or blur commits. Empty value cancels.
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center bg-bg/75 px-4 backdrop-blur-sm"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <input
+            ref={renameInputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Name this project…"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submitRename();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                cancelRename();
+              }
+            }}
+            onBlur={submitRename}
+            className="w-full max-w-[260px] rounded-[6px] border border-border bg-content px-3 py-2 text-center text-[14px] font-medium text-fg outline-none placeholder:text-tertiary focus:border-fg"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -395,13 +450,16 @@ function HeroFrame({
           />
         )
       ) : (
-        // Empty hero — soft gradient + title placeholder so a tile without
-        // media still reads as a real tile rather than a broken slot.
+        // Empty hero — soft gradient + icon. Title only renders when this
+        // tile has actually been promoted to a project; media tiles
+        // (empty title) stay anonymous.
         <div className="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-hover via-content to-hover px-4 text-center text-muted">
           <ImageIcon size={20} weight="bold" aria-hidden />
-          <p className="line-clamp-2 text-[13px] font-medium text-fg">
-            {title || "Untitled"}
-          </p>
+          {title && (
+            <p className="line-clamp-2 text-[13px] font-medium text-fg">
+              {title}
+            </p>
+          )}
         </div>
       )}
       {openOverlay && (

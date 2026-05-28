@@ -287,17 +287,14 @@ export function Gallery({
     }
   };
 
-  const handleToggleOpenable = async (id: string) => {
-    const project = groupsRef.current
-      .flatMap((g) => g.projects)
-      .find((p) => p.id === id);
-    if (!project) return;
-    const next = !project.isOpenable;
+  const handlePromote = async (id: string, title: string) => {
+    const snapshot = groups;
+    // Optimistic flip — show the new title and the projecty state immediately.
     setGroups((cur) =>
       cur.map((g) => ({
         ...g,
         projects: g.projects.map((p) =>
-          p.id === id ? { ...p, isOpenable: next } : p
+          p.id === id ? { ...p, isOpenable: true, title } : p
         ),
       }))
     );
@@ -305,18 +302,24 @@ export function Gallery({
       const res = await fetch(`/api/projects/${id}`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ isOpenable: next }),
+        body: JSON.stringify({ isOpenable: true, title, slug: title }),
       });
       if (!res.ok) throw new Error(`save failed (${res.status})`);
+      // Slug may have been suffixed for collisions; pull the canonical
+      // value back into local state so subsequent links work.
+      const updated = (await res.json()) as { slug?: string };
+      if (updated.slug) {
+        setGroups((cur) =>
+          cur.map((g) => ({
+            ...g,
+            projects: g.projects.map((p) =>
+              p.id === id ? { ...p, slug: updated.slug! } : p
+            ),
+          }))
+        );
+      }
     } catch {
-      setGroups((cur) =>
-        cur.map((g) => ({
-          ...g,
-          projects: g.projects.map((p) =>
-            p.id === id ? { ...p, isOpenable: !next } : p
-          ),
-        }))
-      );
+      setGroups(snapshot);
     }
   };
 
@@ -430,7 +433,7 @@ export function Gallery({
               onProjectResize={handleProjectResize}
               onProjectResizeCommit={projectsResizeCommitGroup}
               onProjectToggleAudio={(id) => void handleToggleAudio(id)}
-              onProjectToggleOpenable={(id) => void handleToggleOpenable(id)}
+              onProjectPromote={(id, title) => void handlePromote(id, title)}
             />
           ))}
         </div>

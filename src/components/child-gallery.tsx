@@ -158,24 +158,26 @@ export function ChildGallery({
     }
   };
 
-  const handleToggleOpenable = async (id: string) => {
-    const project = projectsRef.current.find((p) => p.id === id);
-    if (!project) return;
-    const next = !project.isOpenable;
+  const handlePromote = async (id: string, title: string) => {
+    const snapshot = projects;
     setProjects((cur) =>
-      cur.map((p) => (p.id === id ? { ...p, isOpenable: next } : p))
+      cur.map((p) => (p.id === id ? { ...p, isOpenable: true, title } : p))
     );
     try {
       const res = await fetch(`/api/projects/${id}`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ isOpenable: next }),
+        body: JSON.stringify({ isOpenable: true, title, slug: title }),
       });
       if (!res.ok) throw new Error();
+      const updated = (await res.json()) as { slug?: string };
+      if (updated.slug) {
+        setProjects((cur) =>
+          cur.map((p) => (p.id === id ? { ...p, slug: updated.slug! } : p))
+        );
+      }
     } catch {
-      setProjects((cur) =>
-        cur.map((p) => (p.id === id ? { ...p, isOpenable: !next } : p))
-      );
+      setProjects(snapshot);
     }
   };
 
@@ -221,7 +223,7 @@ export function ChildGallery({
               onResize={(c, r) => handleResize(p.id, c, r)}
               onResizeCommit={() => handleResizeCommit(p.id)}
               onToggleAudio={() => void handleToggleAudio(p.id)}
-              onToggleOpenable={() => void handleToggleOpenable(p.id)}
+              onPromote={(title) => void handlePromote(p.id, title)}
               spanClass={`animate-fade-rise ${spanClass(p.colSpan, p.rowSpan)}`}
               revealDelayMs={i * 60}
             />

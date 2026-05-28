@@ -46,10 +46,19 @@ export async function POST(req: Request) {
      *  gallery, and `groupId` is ignored (sub-projects don't belong to
      *  sections). */
     parentId?: string;
+    /** True when this row should be created as a project (detail page,
+     *  named) rather than a media tile. Defaults to false. */
+    isOpenable?: boolean;
   };
 
-  const title = body.title?.trim() || "Untitled";
-  let slug = slugify(title);
+  // Empty title is meaningful — "media tile, not a project." Don't coerce
+  // to "Untitled" anymore; the UI treats empty as media.
+  const titleRaw = body.title ?? "";
+  const title = titleRaw.trim();
+  // Slug source — fall back to a random suffix when there's no title so
+  // the URL space stays unique. Media tiles aren't addressable anyway
+  // (the detail route redirects them home).
+  let slug = slugify(title) || nanoid(8);
 
   const existing = await prisma.project.findUnique({ where: { slug } });
   if (existing) slug = `${slug}-${nanoid(4)}`;
@@ -97,6 +106,7 @@ export async function POST(req: Request) {
       sourceUrl: body.sourceUrl,
       heroImageUrl: body.heroImageUrl,
       posterUrl: body.posterUrl,
+      isOpenable: body.isOpenable ?? false,
       order,
       groupId,
       parentId: body.parentId ?? null,
