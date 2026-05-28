@@ -122,34 +122,31 @@ export default async function ProjectDetail({
       </FadeIn>
 
       {/* Hero — the project's cover, full-bleed across the content area.
-          Same 16:10 aspect + 6px corner radius as the homepage tile so
-          the framing reads as "the same tile, scaled up" when the visitor
-          clicks through. Reuses ProjectHero for video heroes (unmuted
-          autoplay + tap-to-unmute fallback). */}
+          Image heroes display at their natural aspect ratio (capped at
+          ~80vh so super-tall screenshots don't push the rest of the page
+          off-screen). Videos stay in a fixed 16:10 frame because they're
+          usually authored at that ratio. */}
       {project.heroImageUrl && (
         <div
           className="animate-fade-rise mt-6 overflow-hidden rounded-[6px] border border-border bg-hover"
           style={{ ["--reveal-delay" as string]: "40ms" }}
         >
-          <div className="relative aspect-[16/10]">
-            {heroIsVideo ? (
+          {heroIsVideo ? (
+            <div className="relative aspect-[16/10]">
               <ProjectHero
                 src={project.heroImageUrl}
                 posterUrl={project.posterUrl ?? null}
                 ariaLabel={project.title}
               />
-            ) : (
-              <SkeletonImage
-                src={project.heroImageUrl}
-                alt={project.title}
-                fill
-                sizes="(min-width: 768px) 90vw, 100vw"
-                priority
-                unoptimized
-                className="object-cover"
-              />
-            )}
-          </div>
+            </div>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={project.heroImageUrl}
+              alt={project.title}
+              className="block max-h-[80vh] w-full object-contain"
+            />
+          )}
         </div>
       )}
 
