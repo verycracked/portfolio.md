@@ -12,6 +12,25 @@ import { FadeIn } from "@/components/fade-in";
 import { isVideoUrl } from "@/lib/media";
 import type { GalleryProject } from "@/components/gallery-types";
 
+/** Prepend `https://` if the owner saved a bare hostname like
+ *  "example.com/path" — keeps `<a href>` from staying same-origin. */
+function normalizeUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("/") || trimmed.startsWith("mailto:")) return trimmed;
+  return `https://${trimmed}`;
+}
+
+/** Show a clean hostname for the source-url link. Falls back to the raw
+ *  string when URL parsing fails on the (now normalized) input. */
+function sourceUrlLabel(raw: string): string {
+  try {
+    return new URL(normalizeUrl(raw)).hostname.replace(/^www\./, "");
+  } catch {
+    return raw.trim();
+  }
+}
+
 /**
  * Public project detail page. Shows the parent's hero + name +
  * description, and below it a single-bento `<ChildGallery>` of any
@@ -138,12 +157,12 @@ export default async function ProjectDetail({
         )}
         {project.sourceUrl && (
           <a
-            href={project.sourceUrl}
+            href={normalizeUrl(project.sourceUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-1 inline-flex items-center gap-1 self-start text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
           >
-            {new URL(project.sourceUrl).hostname}
+            {sourceUrlLabel(project.sourceUrl)}
             <ArrowUpRight size={11} weight="bold" aria-hidden />
           </a>
         )}
