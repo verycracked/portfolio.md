@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "pnpm --filter portfolio-md-mcp build",
     "dev": "next dev",
+    "prebuild": "pnpm --filter portfolio-md-mcp build",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "mcp": "pnpm --filter portfolio-md-mcp",
     "postinstall": "prisma generate"
   },
   "dependencies": {

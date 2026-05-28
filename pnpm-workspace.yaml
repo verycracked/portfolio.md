@@ -1,3 +1,7 @@
+packages:
+  - "."
+  - "mcp"
+
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver

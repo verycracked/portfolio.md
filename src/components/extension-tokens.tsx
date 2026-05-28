@@ -11,7 +11,7 @@ type Token = {
 
 export function ExtensionTokens() {
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [label, setLabel] = useState("Snapshot extension");
+  const [label, setLabel] = useState("MCP / Snapshot extension");
   const [newToken, setNewToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,10 +56,15 @@ export function ExtensionTokens() {
   return (
     <section className="flex flex-col gap-3">
       <header>
-        <h3 className="text-[14px] font-semibold text-fg">Extension tokens</h3>
+        <h3 className="text-[14px] font-semibold text-fg">API tokens</h3>
         <p className="mt-1 text-[12px] text-muted">
-          Use these to authorize the Snapshot Chrome extension. Each token is
-          shown once when minted.
+          Bearer tokens for clients that talk to portfolio.md from outside the
+          editor: the Snapshot Chrome extension and the{" "}
+          <code className="rounded-[3px] border border-border-soft bg-hover px-1 py-[1px] font-mono text-[11px]">
+            portfolio-md-mcp
+          </code>{" "}
+          server (Claude Desktop, Cursor, etc.). Each token is shown once when
+          minted.
         </p>
       </header>
 
@@ -83,8 +88,8 @@ export function ExtensionTokens() {
       {newToken && (
         <div className="flex flex-col gap-2 rounded-[6px] border border-border bg-content p-3">
           <p className="text-[12px] text-muted">
-            Copy this token into the extension&apos;s options page. You won&apos;t
-            see it again.
+            Copy this token into the extension&apos;s options page or your MCP
+            client&apos;s config. You won&apos;t see it again.
           </p>
           <code className="block break-all rounded-[4px] border border-border-soft bg-hover px-2 py-1.5 font-mono text-[12px] text-fg">
             {newToken}

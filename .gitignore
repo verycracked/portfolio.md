@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# mcp build artifacts (mcp/ is published separately to npm)
+/mcp/dist
+/mcp/node_modules

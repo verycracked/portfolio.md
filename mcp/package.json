@@ -1,0 +1,39 @@
+{
+  "name": "portfolio-md-mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for portfolio.md — let AI agents push session notes, project copy, and assets straight into your portfolio.",
+  "keywords": ["mcp", "portfolio", "ai", "claude", "model-context-protocol"],
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/server.js",
+  "bin": {
+    "portfolio-md-mcp": "./dist/server.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": "./dist/server.js",
+    "./http": "./dist/http.js",
+    "./tools": "./dist/tools/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node ../scripts/mcp-shebang.mjs",
+    "dev": "tsx src/server.ts",
+    "test": "node --test --import tsx/esm src/**/*.test.ts",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.22.3",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}
