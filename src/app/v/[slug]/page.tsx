@@ -4,6 +4,7 @@ import { isAuthed } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NomoMarkdown } from "@/lib/nomo-markdown";
 import matter from "gray-matter";
+import { Avatar } from "@/components/avatar";
 import { FadeIn } from "@/components/fade-in";
 import { Gallery } from "@/components/gallery";
 import { OwnerToolbar } from "@/components/owner-toolbar";
@@ -92,31 +93,42 @@ export default async function ViewPage({
   );
 
   return (
-    <FadeIn>
+    <main className="relative mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
       {owner && <OwnerToolbar />}
 
-      {view.greeting && <ViewGreeting text={view.greeting} />}
-
-      {view.showAbout && aboutMarkdown && (
-        <NomoMarkdown
-          body={aboutMarkdown}
-          context={{ avatarUrl: settings?.avatarUrl ?? null, caseStudies }}
-        />
-      )}
-
-      {view.showProjects && galleryGroups.length > 0 && (
-        <section
-          id="portfolio"
-          className={view.showAbout ? "mt-16 scroll-mt-8" : "scroll-mt-8"}
+      {settings?.avatarUrl && (
+        <div
+          className="animate-fade-rise mb-10"
+          style={{ ["--reveal-delay" as string]: "40ms" }}
         >
-          <Gallery
-            initial={galleryGroups}
-            owner={false}
-            previewing
-            disableLinks
-          />
-        </section>
+          <Avatar initialUrl={settings.avatarUrl} editable={false} />
+        </div>
       )}
-    </FadeIn>
+
+      <FadeIn>
+        {view.greeting && <ViewGreeting text={view.greeting} />}
+
+        {view.showAbout && aboutMarkdown && (
+          <NomoMarkdown
+            body={aboutMarkdown}
+            context={{ avatarUrl: settings?.avatarUrl ?? null, caseStudies }}
+          />
+        )}
+
+        {view.showProjects && galleryGroups.length > 0 && (
+          <section
+            id="portfolio"
+            className={view.showAbout ? "mt-16 scroll-mt-8" : "scroll-mt-8"}
+          >
+            <Gallery
+              initial={galleryGroups}
+              owner={false}
+              previewing
+              disableLinks
+            />
+          </section>
+        )}
+      </FadeIn>
+    </main>
   );
 }
