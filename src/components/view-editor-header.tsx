@@ -3,13 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Check,
-  CopySimple,
-  Eye,
-  Trash,
-} from "@phosphor-icons/react/dist/ssr";
+import { ArrowLeft, Trash } from "@phosphor-icons/react/dist/ssr";
 import { EditableText } from "@/components/editable-text";
 import { SaveStatusBadge, useSaveTracker } from "@/components/save-status";
 import { slugify } from "@/lib/slug";
@@ -42,7 +36,6 @@ export function ViewEditorHeader({
   const [slug, setSlug] = useState(viewSlug);
   const [slugError, setSlugError] = useState<string | null>(null);
   const [greetingDraft, setGreetingDraft] = useState(greeting);
-  const [copied, setCopied] = useState(false);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -134,18 +127,6 @@ export function ViewEditorHeader({
     router.replace(`/v/${final}`);
   };
 
-  const copyShareLink = async () => {
-    if (typeof window === "undefined") return;
-    const url = `${window.location.origin}/v/${slug}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      window.prompt("Copy this share link:", url);
-    }
-  };
-
   const deleteView = async () => {
     if (!confirm(`Delete "${name}"? Shared links will 404.`)) return;
     const res = await fetch(`/api/views/${viewId}`, { method: "DELETE" });
@@ -202,41 +183,19 @@ export function ViewEditorHeader({
             )}
           </div>
         </div>
+        {/* Preview + Share live in the global OwnerToolbar (top-right
+            of the page) — only the view-specific Delete + the save
+            status stay here so we don't double up. */}
         <div className="flex items-center gap-2 text-[12px]">
           <SaveStatusBadge state={tracker.state} />
-          <a
-            href={`/v/${slug}?preview=1`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/80 px-2 py-1 text-muted hover:border-border hover:text-fg"
-          >
-            <Eye size={11} weight="bold" aria-hidden />
-            Preview
-          </a>
-          <button
-            type="button"
-            onClick={() => void copyShareLink()}
-            className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/80 px-2 py-1 text-muted hover:border-border hover:text-fg"
-          >
-            {copied ? (
-              <>
-                <Check size={11} weight="bold" aria-hidden />
-                Copied
-              </>
-            ) : (
-              <>
-                <CopySimple size={11} weight="bold" aria-hidden />
-                Share
-              </>
-            )}
-          </button>
           <button
             type="button"
             onClick={() => void deleteView()}
             title="Delete view"
-            className="inline-flex items-center rounded-[4px] border border-border-soft bg-content/80 px-2 py-1 text-tertiary hover:border-border hover:text-rose-400"
+            className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/80 px-2 py-1 text-tertiary hover:border-border hover:text-rose-400"
           >
             <Trash size={11} weight="bold" aria-hidden />
+            Delete view
           </button>
         </div>
       </div>
