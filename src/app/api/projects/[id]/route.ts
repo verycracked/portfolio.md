@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAuthed } from "@/lib/auth";
+import { isOwnerOrBearer } from "@/lib/extension-auth";
 import { hashPassword } from "@/lib/project-auth";
 import { prisma } from "@/lib/prisma";
 
@@ -38,15 +39,66 @@ function slugify(input: string) {
     .replace(/^-|-$/g, "");
 }
 
+// GET /api/projects/[id] — full project row including `body` so non-browser
+// clients (notably the portfolio-md MCP) can read the current state before
+// patching. Owner-or-bearer gated; the list endpoint already enforces the
+// same boundary so we match it here.
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!(await isOwnerOrBearer(req))) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const { id } = await params;
+  const project = await prisma.project.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      description: true,
+      body: true,
+      heroImageUrl: true,
+      sourceUrl: true,
+      isOpenable: true,
+      hasAudio: true,
+      colSpan: true,
+      rowSpan: true,
+      order: true,
+      groupId: true,
+      parentId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+  if (!project) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+  return NextResponse.json(project);
+}
+
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!(await isAuthed())) {
+  // Bearer-allowed so the portfolio-md MCP can patch project metadata. Setting
+  // a visitor password (`data.password`) still requires the cookie session
+  // below — bearer tokens can't change auth surface area on their own.
+  if (!(await isOwnerOrBearer(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const { id } = await params;
   const data = (await req.json()) as Body;
+
+  // Password mutation is owner-only. Surface a friendly 403 instead of a
+  // silent passthrough so a misconfigured client doesn't think it worked.
+  if (data.password !== undefined && !(await isAuthed())) {
+    return NextResponse.json(
+      { error: "password changes require the owner session" },
+      { status: 403 }
+    );
+  }
 
   const update: Record<string, unknown> = {};
   if (data.title !== undefined) update.title = data.title;
@@ -55,11 +107,14 @@ export async function PUT(
   if (data.heroImageUrl !== undefined) update.heroImageUrl = data.heroImageUrl;
   if (data.sourceUrl !== undefined) update.sourceUrl = data.sourceUrl;
   if (data.order !== undefined) update.order = data.order;
+  // Spans are clamped to the bento grid's column count (currently 12).
+  // The DB column stays an Int with no DB-side check, so we own the
+  // clamp here to avoid wild values poisoning the layout.
   if (data.colSpan !== undefined) {
-    update.colSpan = Math.min(4, Math.max(1, Math.round(data.colSpan)));
+    update.colSpan = Math.min(12, Math.max(1, Math.round(data.colSpan)));
   }
   if (data.rowSpan !== undefined) {
-    update.rowSpan = Math.min(2, Math.max(1, Math.round(data.rowSpan)));
+    update.rowSpan = Math.min(12, Math.max(1, Math.round(data.rowSpan)));
   }
   if (data.groupId !== undefined) update.groupId = data.groupId;
   if (data.parentId !== undefined) update.parentId = data.parentId;
@@ -96,6 +151,8 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Deletes stay cookie-only: bearer tokens are scoped to "add to / update
+  // existing content", not to destroy projects.
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }

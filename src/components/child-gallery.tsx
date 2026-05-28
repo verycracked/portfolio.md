@@ -17,7 +17,7 @@ import {
   SortableGalleryCard,
 } from "@/components/gallery-card";
 import { NewTile } from "@/components/new-tile";
-import { spanClass, type GalleryProject } from "@/components/gallery-types";
+import { spanStyle, type GalleryProject } from "@/components/gallery-types";
 import { uploadMedia } from "@/lib/media-utils";
 
 const SAVE_DEBOUNCE_MS = 350;
@@ -209,12 +209,13 @@ export function ChildGallery({
   if (!editable) {
     if (projects.length === 0) return null;
     return (
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 ">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px]">
         {projects.map((p, i) => (
           <GalleryCard
             key={p.id}
             project={p}
-            spanClass={`animate-fade-rise ${spanClass(p.colSpan, p.rowSpan)}`}
+            spanClass="animate-fade-rise"
+            spanStyle={spanStyle(p.colSpan, p.rowSpan)}
             revealDelayMs={i * 60}
           />
         ))}
@@ -237,7 +238,7 @@ export function ChildGallery({
       >
         <div
           data-reordering={activeId ? "1" : undefined}
-          className="reorder-grid grid grid-cols-1 gap-6 sm:grid-cols-2 "
+          className="reorder-grid grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px]"
         >
           {projects.map((p, i) => (
             <SortableGalleryCard
@@ -249,7 +250,8 @@ export function ChildGallery({
               onToggleAudio={() => void handleToggleAudio(p.id)}
               onPromote={(title) => void handlePromote(p.id, title)}
               onReplaceCover={(file) => void handleReplaceCover(p.id, file)}
-              spanClass={`animate-fade-rise ${spanClass(p.colSpan, p.rowSpan)}`}
+              spanClass="animate-fade-rise"
+              spanStyle={spanStyle(p.colSpan, p.rowSpan)}
               revealDelayMs={i * 60}
             />
           ))}

@@ -20,7 +20,7 @@ import { HeroVideo } from "@/components/hero-video";
 import { SkeletonImage } from "@/components/skeleton-image";
 import { MEDIA_ACCEPT, isVideoUrl } from "@/lib/media";
 import { usePreviewing, withPreview } from "@/lib/preview";
-import type { GalleryProject } from "@/components/gallery-types";
+import { MAX_SPAN, type GalleryProject } from "@/components/gallery-types";
 
 // Sizes hint for the bento grid: ≥640px = at most half the 1280px content
 // area (one column out of two), below = roughly the viewport. Drives
@@ -29,8 +29,12 @@ const HERO_SIZES = "(min-width: 640px) 50vw, 100vw";
 
 type CommonProps = {
   project: GalleryProject;
-  /** Classes applied to the outer grid cell — usually col/row-span. */
-  spanClass: string;
+  /** Optional classes applied to the outer grid cell (animate-fade-rise
+   *  etc.). Sizing comes from `spanStyle`, not from a class. */
+  spanClass?: string;
+  /** Inline grid-column / grid-row spans for this tile. Drives the
+   *  free-form bento sizing. */
+  spanStyle?: React.CSSProperties;
   /** Optional fade-in delay (ms) to stagger reveal animations. */
   revealDelayMs?: number;
   /** Skip lazy loading + emit a preload for tiles above the fold. */
@@ -45,14 +49,21 @@ type CommonProps = {
  */
 export function GalleryCard({
   project,
-  spanClass,
+  spanClass = "",
+  spanStyle,
   revealDelayMs,
   priority,
 }: CommonProps) {
-  const style: React.CSSProperties | undefined =
-    revealDelayMs !== undefined
-      ? ({ ["--reveal-delay" as string]: `${revealDelayMs}ms` } as React.CSSProperties)
-      : undefined;
+  // Merge the reveal-delay CSS var (when supplied) into the same style
+  // object so we only spread one prop onto the outer element.
+  const style: React.CSSProperties | undefined = (() => {
+    const base = spanStyle ? { ...spanStyle } : undefined;
+    if (revealDelayMs === undefined) return base;
+    return {
+      ...(base ?? {}),
+      ["--reveal-delay" as string]: `${revealDelayMs}ms`,
+    } as React.CSSProperties;
+  })();
   // A tile is clickable when it has children OR the owner explicitly
   // opted in to a detail page (e.g. a stand-alone project with a
   // meaningful write-up but no sub-projects).
@@ -120,7 +131,8 @@ type OwnerProps = CommonProps & {
  */
 export function SortableGalleryCard({
   project,
-  spanClass,
+  spanClass = "",
+  spanStyle,
   revealDelayMs,
   priority,
   onDelete,
@@ -178,6 +190,7 @@ export function SortableGalleryCard({
   const composed = [base, lift].filter(Boolean).join(" ");
 
   const style: React.CSSProperties = {
+    ...(spanStyle ?? {}),
     transform: composed || undefined,
     transition: sortable.transition,
     zIndex: sortable.isDragging ? 40 : undefined,
@@ -202,27 +215,34 @@ export function SortableGalleryCard({
     const node = cellRef.current;
     const rect = node.getBoundingClientRect();
     const startCol = project.colSpan;
-    // Width of a single column: for a span-2 tile, total width spans
-    // both columns + the gap between them, so divide by startCol to
-    // back out the per-column footprint.
+    const startRow = project.rowSpan;
+    // Width/height of a single column / row track. The card currently
+    // spans startCol columns and startRow rows, so divide to recover
+    // the per-cell footprint. Gaps between tracks are folded into the
+    // per-cell math here (small bias) and the snap threshold is loose
+    // enough that the difference doesn't matter in practice.
     const cellW = rect.width / startCol;
-    const anchorX = rect.right;
+    const cellH = rect.height / startRow;
+    const anchorX = e.clientX;
+    const anchorY = e.clientY;
 
-    const handleMove = (ev: PointerEvent) => {
-      const dx = ev.clientX - anchorX;
-      // Only horizontal direction matters now — vertical size follows
-      // the chosen shape's aspect ratio (square at colSpan=1, 2:1 at
-      // colSpan=2). Snap thresholds at 40% of a column.
-      const nextCol =
-        startCol === 1 && dx > cellW * 0.4
-          ? 2
-          : startCol === 2 && dx < -cellW * 0.4
-            ? 1
-            : startCol;
-      // rowSpan is always 1 — kept on the row only because the column
-      // still exists in the DB and the API accepts it.
-      if (nextCol !== project.colSpan || project.rowSpan !== 1) {
-        onResize(nextCol, 1);
+    const handleMove = (mv: PointerEvent) => {
+      const dx = mv.clientX - anchorX;
+      const dy = mv.clientY - anchorY;
+      // Continuous snap: every full cell of drag distance bumps the
+      // span by one. `Math.round` gives a half-cell hysteresis on each
+      // side so a tile doesn't flicker between sizes on tiny pointer
+      // jitter.
+      const nextCol = Math.max(
+        1,
+        Math.min(MAX_SPAN, startCol + Math.round(dx / cellW))
+      );
+      const nextRow = Math.max(
+        1,
+        Math.min(MAX_SPAN, startRow + Math.round(dy / cellH))
+      );
+      if (nextCol !== project.colSpan || nextRow !== project.rowSpan) {
+        onResize(nextCol, nextRow);
       }
     };
 
@@ -320,7 +340,7 @@ export function SortableGalleryCard({
           e.preventDefault();
           e.stopPropagation();
         }}
-        className="absolute bottom-3 right-3 inline-flex h-7 w-7 cursor-ew-resize items-center justify-center rounded-[4px] border border-border-soft bg-content/85 text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
+        className="absolute bottom-3 right-3 inline-flex h-7 w-7 cursor-nwse-resize items-center justify-center rounded-[4px] border border-border-soft bg-content/85 text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
       >
         <CornersOut size={13} weight="bold" aria-hidden />
       </button>
@@ -476,13 +496,8 @@ function HeroFrame({
             // softens text + edges visibly. Serve the raw PNG/JPEG so the
             // gallery stays pixel-perfect at the cost of a heavier payload.
             unoptimized
-            // `object-contain` so the entire image is visible inside the
-            // tile — fits to whichever dimension is constraining (usually
-            // width). The leftover space takes on the parent's bg-hover
-            // color so it reads as intentional matting rather than a
-            // cropped screenshot.
             className={
-              "object-contain transition-[filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
+              "object-cover transition-[filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
               (openOverlay ? "group-hover/tile:blur-[3px]" : "")
             }
           />

@@ -11,7 +11,8 @@ import {
   SortableGalleryCard,
 } from "@/components/gallery-card";
 import { NewTile } from "@/components/new-tile";
-import { spanClass, type GalleryGroup } from "@/components/gallery-types";
+import { spanStyle, type GalleryGroup } from "@/components/gallery-types";
+
 
 type CommonProps = {
   group: GalleryGroup;
@@ -91,7 +92,7 @@ export function GallerySection({
           ref={droppable.setNodeRef}
           data-droppable-active={droppable.isOver ? "1" : undefined}
           className={
-            "reorder-grid grid grid-cols-1 gap-6 sm:grid-cols-2  " +
+            "reorder-grid grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px] " +
             (droppable.isOver
               ? "rounded-[8px] ring-2 ring-fg/40 ring-offset-2 ring-offset-bg"
               : "")
@@ -107,7 +108,7 @@ export function GallerySection({
               onToggleAudio={() => onProjectToggleAudio(p.id)}
               onPromote={(title) => onProjectPromote(p.id, title)}
               onReplaceCover={(file) => onProjectReplaceCover(p.id, file)}
-              spanClass={spanClass(p.colSpan, p.rowSpan)}
+              spanStyle={spanStyle(p.colSpan, p.rowSpan)}
             />
           ))}
           <NewTile groupId={group.id} />
@@ -128,12 +129,12 @@ export function VisitorGallerySection({
       <h2 className="border-b border-border-soft pb-2 text-[13px] font-medium tracking-tight text-muted">
         {group.name}
       </h2>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 ">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px]">
         {group.projects.map((p, i) => (
           <GalleryCard
             key={p.id}
             project={p}
-            spanClass={spanClass(p.colSpan, p.rowSpan)}
+            spanStyle={spanStyle(p.colSpan, p.rowSpan)}
             priority={prioritizeFirstRow && i < 2}
           />
         ))}

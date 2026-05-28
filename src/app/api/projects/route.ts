@@ -115,6 +115,12 @@ export async function POST(req: Request) {
       heroImageUrl: body.heroImageUrl,
       posterUrl: body.posterUrl,
       isOpenable: body.isOpenable ?? false,
+      // Free-form bento grid is 12 cols wide; default new tiles to a
+      // 4×4 patch (~1/3 of the row, square-ish at typical container
+      // widths) so they're immediately visible without the owner
+      // having to resize first.
+      colSpan: 4,
+      rowSpan: 4,
       order,
       groupId,
       parentId: body.parentId ?? null,
