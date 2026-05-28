@@ -122,17 +122,18 @@ export default async function ProjectDetail({
       </FadeIn>
 
       {/* Hero — the project's cover, full-bleed across the content area.
-          Image heroes display at their natural aspect ratio (capped at
-          ~80vh so super-tall screenshots don't push the rest of the page
-          off-screen). Videos stay in a fixed 16:10 frame because they're
-          usually authored at that ratio. */}
+          Image heroes render at their full natural height so the wrapper
+          hugs the image exactly (no max-height letterboxing — that was
+          reading as "empty container space" when the captured asset had
+          dark padding inside it). Videos stay in a fixed 16:10 frame
+          because they're usually authored at that ratio. */}
       {project.heroImageUrl && (
         <div
-          className="animate-fade-rise mt-6 overflow-hidden rounded-[6px] border border-border bg-hover"
+          className="animate-fade-rise mt-6 overflow-hidden rounded-[6px] border border-border"
           style={{ ["--reveal-delay" as string]: "40ms" }}
         >
           {heroIsVideo ? (
-            <div className="relative aspect-[16/10]">
+            <div className="relative aspect-[16/10] bg-hover">
               <ProjectHero
                 src={project.heroImageUrl}
                 posterUrl={project.posterUrl ?? null}
@@ -144,7 +145,7 @@ export default async function ProjectDetail({
             <img
               src={project.heroImageUrl}
               alt={project.title}
-              className="block max-h-[80vh] w-full object-contain"
+              className="block h-auto w-full"
             />
           )}
         </div>
