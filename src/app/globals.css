@@ -147,6 +147,14 @@ select {
   cursor: text;
   white-space: pre-wrap;
   word-break: break-word;
+  /* Subtle hover hint so contenteditable headings/labels read as
+     clickable. Border-radius matches the typical hover-target sizing
+     elsewhere in the app. */
+  border-radius: 4px;
+  transition: background-color 120ms ease-out;
+}
+.editable:hover:not(:focus) {
+  background-color: var(--hover);
 }
 
 /* ── Motion ──────────────────────────────────────────────────────────
