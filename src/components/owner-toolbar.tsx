@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Check,
   Eye,
@@ -31,6 +32,12 @@ type Props = {
  */
 export function OwnerToolbar({ previewing }: Props) {
   const [copied, setCopied] = useState(false);
+  // Toggle preview on the CURRENT path, not always `/`. Lets owners drop
+  // in/out of visitor view without losing their place in the site.
+  const pathname = usePathname() || "/";
+  const togglePreviewHref = previewing
+    ? pathname
+    : `${pathname}?preview=1`;
 
   const copyShareLink = async () => {
     if (typeof window === "undefined") return;
@@ -59,7 +66,7 @@ export function OwnerToolbar({ previewing }: Props) {
       style={{ ["--reveal-delay" as string]: "20ms" }}
     >
       <Link
-        href={previewing ? "/" : "/?preview=1"}
+        href={togglePreviewHref}
         className="inline-flex items-center gap-1.5 rounded-[6px] border border-border-soft bg-content/80 px-2.5 py-1 text-muted backdrop-blur transition-colors hover:border-border hover:text-fg"
         aria-label={previewing ? "Exit preview" : "Preview as visitor"}
       >

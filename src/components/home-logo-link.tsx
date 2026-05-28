@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ArrowUp } from "@phosphor-icons/react/dist/ssr";
+import { usePreviewing, withPreview } from "@/lib/preview";
 
 /**
  * Top-left VC mark. On a non-`/` route it's a plain `<Link href="/">`. On
@@ -17,6 +18,7 @@ import { ArrowUp } from "@phosphor-icons/react/dist/ssr";
  */
 export function HomeLogoLink() {
   const pathname = usePathname();
+  const previewing = usePreviewing();
   const [scrolled, setScrolled] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -36,7 +38,7 @@ export function HomeLogoLink() {
 
   return (
     <Link
-      href="/"
+      href={withPreview("/", previewing)}
       aria-label={showArrow ? "Back to top" : "portfolio.md home"}
       onClick={(e) => {
         if (pathname !== "/") return;

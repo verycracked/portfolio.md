@@ -19,6 +19,7 @@ import {
 import { HeroVideo } from "@/components/hero-video";
 import { SkeletonImage } from "@/components/skeleton-image";
 import { MEDIA_ACCEPT, isVideoUrl } from "@/lib/media";
+import { usePreviewing, withPreview } from "@/lib/preview";
 import type { GalleryProject } from "@/components/gallery-types";
 
 // Sizes hint for the bento grid: ≥640px = at most half the 1280px content
@@ -56,6 +57,7 @@ export function GalleryCard({
   // opted in to a detail page (e.g. a stand-alone project with a
   // meaningful write-up but no sub-projects).
   const clickable = project.childCount > 0 || project.isOpenable;
+  const previewing = usePreviewing();
 
   const body = (
     <CardShell>
@@ -76,7 +78,7 @@ export function GalleryCard({
   if (clickable) {
     return (
       <Link
-        href={`/projects/${project.slug}`}
+        href={withPreview(`/projects/${project.slug}`, previewing)}
         aria-label={`Open ${project.title}`}
         className={`group/tile relative block ${spanClass}`}
         style={style}
@@ -135,6 +137,7 @@ export function SortableGalleryCard({
   const cellRef = useRef<HTMLDivElement | null>(null);
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
+  const previewing = usePreviewing();
   const clickable = project.childCount > 0 || project.isOpenable;
   // Inline rename UX — the ↗ chip below opens this overlay; the user
   // names the tile and on submit we promote it to a project.
@@ -251,7 +254,7 @@ export function SortableGalleryCard({
         // Skip if the click landed on an interactive chrome button (X /
         // resize / audio / open toggle) — those have their own handlers.
         if (target.closest("button")) return;
-        router.push(`/projects/${project.slug}`);
+        router.push(withPreview(`/projects/${project.slug}`, previewing));
       }}
       className={`reorder-card group relative select-none ${spanClass} ${
         clickable ? "cursor-pointer" : ""

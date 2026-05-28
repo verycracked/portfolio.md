@@ -114,7 +114,7 @@ export default async function ProjectDetail({
       {/* Back affordance — always present so visitors have a clear way out. */}
       <FadeIn>
         <Link
-          href="/"
+          href={previewing ? "/?preview=1" : "/"}
           className="inline-flex items-center gap-1 text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
         >
           <ArrowLeft size={11} weight="bold" aria-hidden />
