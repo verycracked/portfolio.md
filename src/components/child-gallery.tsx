@@ -232,39 +232,39 @@ export function ChildGallery({
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveId(null)}
     >
-      <SortableContext
-        items={projects.map((p) => p.id)}
-        strategy={rectSortingStrategy}
-      >
-        <div
-          data-reordering={activeId ? "1" : undefined}
-          className="reorder-grid grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px] sm:grid-flow-row-dense"
-        >
-          {projects.map((p, i) => (
-            <SortableGalleryCard
-              key={p.id}
-              project={p}
-              onDelete={() => void handleDelete(p.id)}
-              onResize={(c, r) => handleResize(p.id, c, r)}
-              onResizeCommit={() => handleResizeCommit(p.id)}
-              onToggleAudio={() => void handleToggleAudio(p.id)}
-              onPromote={(title) => void handlePromote(p.id, title)}
-              onReplaceCover={(file) => void handleReplaceCover(p.id, file)}
-              spanClass="animate-fade-rise"
-              spanStyle={spanStyle(p.colSpan, p.rowSpan)}
-              revealDelayMs={i * 60}
-            />
-          ))}
-          <div
-            className="animate-fade-rise"
-            style={{
-              ["--reveal-delay" as string]: `${projects.length * 60}ms`,
-            }}
-          >
-            <NewTile parentId={parentId} />
-          </div>
+      <div className="flex flex-col gap-3">
+        {/* Owner-only upload affordance — used to live as a card at
+            the end of the grid, now floats above so the bento stays
+            uniform and gap-free. */}
+        <div className="flex justify-end">
+          <NewTile parentId={parentId} />
         </div>
-      </SortableContext>
+        <SortableContext
+          items={projects.map((p) => p.id)}
+          strategy={rectSortingStrategy}
+        >
+          <div
+            data-reordering={activeId ? "1" : undefined}
+            className="reorder-grid grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px] sm:grid-flow-row-dense"
+          >
+            {projects.map((p, i) => (
+              <SortableGalleryCard
+                key={p.id}
+                project={p}
+                onDelete={() => void handleDelete(p.id)}
+                onResize={(c, r) => handleResize(p.id, c, r)}
+                onResizeCommit={() => handleResizeCommit(p.id)}
+                onToggleAudio={() => void handleToggleAudio(p.id)}
+                onPromote={(title) => void handlePromote(p.id, title)}
+                onReplaceCover={(file) => void handleReplaceCover(p.id, file)}
+                spanClass="animate-fade-rise"
+                spanStyle={spanStyle(p.colSpan, p.rowSpan)}
+                revealDelayMs={i * 60}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </div>
     </DndContext>
   );
 }

@@ -19,21 +19,21 @@ type Props =
     };
 
 /**
- * Owner-only "add" tile that sits at the end of each section's grid.
- *  • Click "Upload" — opens the file picker, every chosen file becomes a
- *    new tile in this section with the file as its hero.
- *  • Drop a file onto this tile — same outcome with a visible highlight
- *    while a drag is over it.
- *  • Click "New" — creates an empty Untitled tile and routes to its editor.
+ * Owner-only upload affordance. Sits in section headers (for the
+ * homepage gallery) or above the child grid (for sub-galleries) — no
+ * longer takes up a full tile slot in the bento. Two actions in one
+ * compact pill:
+ *
+ *   • "Upload" — opens the file picker; every chosen file becomes a
+ *     media tile (no title yet) in this section.
+ *   • "New" — creates an empty Untitled project tile and routes to
+ *     its editor so the owner can fill it in.
  */
 export function NewTile(props: Props) {
   const { groupId, parentId } = props;
-  // Whichever id was supplied flows into both upload-and-create and the
-  // blank-create handlers below. The API accepts one or the other.
   const target = parentId ? { parentId } : { groupId };
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const uploadAndCreate = async (files: File[]) => {
@@ -77,8 +77,6 @@ export function NewTile(props: Props) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title: "Untitled project",
-          // Blank-create is an explicit "make a project" action — flip
-          // isOpenable on so the new row immediately reads as a project.
           isOpenable: true,
           ...target,
         }),
@@ -91,35 +89,8 @@ export function NewTile(props: Props) {
     }
   };
 
-  const hasFiles = (e: React.DragEvent) =>
-    Array.from(e.dataTransfer.types).includes("Files");
-
   return (
-    <div
-      onDragEnter={(e) => {
-        if (!hasFiles(e)) return;
-        e.preventDefault();
-        setDragOver(true);
-      }}
-      onDragOver={(e) => {
-        if (!hasFiles(e)) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "copy";
-      }}
-      onDragLeave={(e) => {
-        if (!hasFiles(e)) return;
-        e.preventDefault();
-        setDragOver(false);
-      }}
-      onDrop={(e) => {
-        if (!hasFiles(e)) return;
-        e.preventDefault();
-        setDragOver(false);
-        const files = Array.from(e.dataTransfer.files);
-        if (files.length > 0) void uploadAndCreate(files);
-      }}
-      className="group/wrapper relative h-full"
-    >
+    <div className="inline-flex items-center gap-1">
       <input
         ref={fileInputRef}
         type="file"
@@ -132,62 +103,30 @@ export function NewTile(props: Props) {
         }}
         className="hidden"
       />
-      <div
-        className={
-          "double-stroke flex h-full min-h-[180px] flex-col overflow-hidden rounded-[8px] bg-hover transition-colors " +
-          (dragOver ? "ring-2 ring-fg/60 ring-offset-2 ring-offset-bg" : "")
-        }
+      <button
+        type="button"
+        disabled={busy}
+        onClick={(e) => {
+          e.preventDefault();
+          fileInputRef.current?.click();
+        }}
+        className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/80 px-2 py-1 text-[11px] text-muted hover:border-border hover:text-fg disabled:opacity-50"
       >
-        <div className="relative z-[1] flex flex-1 flex-col gap-2 p-1">
-          <div
-            className={
-              "flex aspect-square flex-col items-center justify-center gap-2 rounded-[6px] border border-dashed transition-colors " +
-              (dragOver
-                ? "border-fg bg-fg/[0.06] text-fg"
-                : "border-border bg-hover text-muted")
-            }
-          >
-            <UploadSimple
-              size={20}
-              weight={dragOver ? "fill" : "bold"}
-              aria-hidden
-            />
-            <p className="text-[12.5px]">
-              {busy
-                ? "Uploading…"
-                : dragOver
-                  ? "Drop to add tile"
-                  : "Drop files or click to upload"}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={(e) => {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                }}
-                className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/80 px-2 py-1 text-[11px] text-fg hover:bg-content disabled:opacity-50"
-              >
-                <UploadSimple size={11} weight="bold" aria-hidden />
-                Upload
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={(e) => {
-                  e.preventDefault();
-                  void createBlank();
-                }}
-                className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/40 px-2 py-1 text-[11px] text-muted hover:text-fg disabled:opacity-50"
-              >
-                <Plus size={11} weight="bold" aria-hidden />
-                New
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+        <UploadSimple size={11} weight="bold" aria-hidden />
+        {busy ? "Uploading…" : "Upload"}
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={(e) => {
+          e.preventDefault();
+          void createBlank();
+        }}
+        className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/40 px-2 py-1 text-[11px] text-tertiary hover:border-border hover:text-fg disabled:opacity-50"
+      >
+        <Plus size={11} weight="bold" aria-hidden />
+        New
+      </button>
     </div>
   );
 }

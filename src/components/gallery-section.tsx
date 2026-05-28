@@ -83,6 +83,7 @@ export function GallerySection({
           ...sortable.attributes,
           ...sortable.listeners,
         }}
+        uploadSlot={<NewTile groupId={group.id} />}
       />
       <SortableContext
         items={group.projects.map((p) => p.id)}
@@ -111,7 +112,6 @@ export function GallerySection({
               spanStyle={spanStyle(p.colSpan, p.rowSpan)}
             />
           ))}
-          <NewTile groupId={group.id} />
         </div>
       </SortableContext>
     </section>
@@ -149,11 +149,16 @@ function SectionHeader({
   onRename,
   onDelete,
   dragHandleProps,
+  uploadSlot,
 }: {
   name: string;
   onRename: (name: string) => void;
   onDelete: () => void;
   dragHandleProps: Record<string, unknown>;
+  /** Optional upload affordance rendered between the title and the
+   *  delete button. Used by the owner section to surface the
+   *  Upload / New buttons that used to live as a tile in the grid. */
+  uploadSlot?: React.ReactNode;
 }) {
   const [draft, setDraft] = useState(name);
   const [editing, setEditing] = useState(false);
@@ -210,6 +215,7 @@ function SectionHeader({
           {name}
         </button>
       )}
+      {uploadSlot}
       <button
         type="button"
         onClick={(e) => {
