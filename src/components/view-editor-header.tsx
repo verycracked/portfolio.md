@@ -82,7 +82,7 @@ export function ViewEditorHeader({
       if (updated.slug && updated.slug !== slug) {
         setSlug(updated.slug);
         setSlugDraft(updated.slug);
-        router.replace(`/v/${updated.slug}`);
+        router.replace(`/v/${updated.slug}/edit`);
       }
     });
   };
@@ -124,7 +124,7 @@ export function ViewEditorHeader({
     setSlugDraft(final);
     // Keep the URL bar in sync with the now-canonical slug so a
     // bookmark / browser refresh resolves to the same view.
-    router.replace(`/v/${final}`);
+    router.replace(`/v/${final}/edit`);
   };
 
   const deleteView = async () => {

@@ -243,7 +243,7 @@ function ViewRowCard({
           ) : (
             <div className="flex items-center gap-1.5">
               <Link
-                href={`/v/${view.slug}`}
+                href={`/v/${view.slug}/edit`}
                 className="text-[14px] font-medium text-fg hover:underline"
               >
                 {view.name}

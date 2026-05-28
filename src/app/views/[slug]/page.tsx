@@ -18,5 +18,5 @@ export default async function LegacyViewEditorRedirect({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  redirect(`/v/${slug}`);
+  redirect(`/v/${slug}/edit`);
 }

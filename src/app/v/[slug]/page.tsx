@@ -8,10 +8,7 @@ import { NomoMarkdown } from "@/lib/nomo-markdown";
 import { Avatar } from "@/components/avatar";
 import { FadeIn } from "@/components/fade-in";
 import { Gallery } from "@/components/gallery";
-import { OwnerToolbar } from "@/components/owner-toolbar";
-import { ViewEditorHeader } from "@/components/view-editor-header";
 import { ViewGreeting } from "@/components/view-greeting";
-import { ViewMarkdownEditorClient } from "@/components/view-markdown-editor-client";
 import type { GalleryGroup } from "@/components/gallery-types";
 import type { ProjectSummary } from "@/lib/case-study";
 
@@ -20,29 +17,16 @@ export const metadata: Metadata = {
 };
 
 /**
- * Public render of a saved View — reads from the per-view tables
- * (ViewGroup + ViewProject) and the per-view markdown body
- * (View.aboutBody).
- *
- * Owner viewing this URL while logged in gets the full editor inline:
- * inline-editable view name + slug + greeting at the top, owner gallery
- * chrome (drag, resize, rename, upload), and an "Edit text" link that
- * routes to `?edit=1` for markdown source editing. Same shape the
- * homepage uses (`owner && !previewing` = editable in place).
- * Visitors and previewing-owners (`?preview=1`) see the same read-only
- * view a public link recipient sees.
+ * Public share URL for a View — always read-only. This is what
+ * prospects / recipients see. Owner gets a small "Edit" link at the
+ * top-right that routes to /v/[slug]/edit; visitors don't see it.
  */
 export default async function ViewPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ preview?: string; edit?: string }>;
 }) {
   const { slug } = await params;
-  const { preview, edit } = await searchParams;
-  const previewing = preview === "1";
-
   const [view, settings, owner] = await Promise.all([
     prisma.view.findUnique({
       where: { slug },
@@ -66,11 +50,6 @@ export default async function ViewPage({
   ]);
   if (!view) notFound();
 
-  const editable = owner && !previewing;
-  const editingText = editable && edit === "1";
-
-  // Markdown is stored with optional frontmatter — parse the same way
-  // readNomoDocument does, so layout/theme/font frontmatter still works.
   const parsed = view.aboutBody ? matter(view.aboutBody) : { content: "" };
   const aboutMarkdown = parsed.content ?? "";
 
@@ -110,74 +89,38 @@ export default async function ViewPage({
     ])
   );
 
-  // Markdown source-editor mode — owner-only, swaps the whole page for
-  // the same NomoEditor the main page uses at `/?edit=1`.
-  if (editingText) {
-    return (
-      <main className="relative mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
-        <Link
-          href={`/v/${view.slug}`}
-          className="mb-6 inline-flex items-center gap-1 text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
-        >
-          ← Done editing text
-        </Link>
-        <ViewMarkdownEditorClient
-          viewId={view.id}
-          initialRaw={view.aboutBody}
-          avatarUrl={settings?.avatarUrl ?? null}
-          caseStudies={caseStudies}
-        />
-      </main>
-    );
-  }
-
   return (
     <main className="relative mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
-      {owner && <OwnerToolbar />}
-
-      {/* Owner editor chrome — name, slug, greeting, share/delete.
-          Visitors and previewing-owners skip this entirely. */}
-      {editable && (
-        <ViewEditorHeader
-          viewId={view.id}
-          viewSlug={view.slug}
-          viewName={view.name}
-          greeting={view.greeting}
-        />
+      {/* Owner sees a small Edit link top-right so they can hop into
+          the editor without changing the URL they share. */}
+      {owner && (
+        <div className="absolute right-5 top-5 z-20 md:right-[3.75rem] md:top-8">
+          <Link
+            href={`/v/${view.slug}/edit`}
+            className="inline-flex items-center gap-1.5 rounded-[6px] border border-border-soft bg-content/80 px-2.5 py-1 text-[12px] text-muted backdrop-blur transition-colors hover:border-border hover:text-fg"
+          >
+            Edit view
+          </Link>
+        </div>
       )}
 
       {settings?.avatarUrl && (
         <div
-          className={
-            "animate-fade-rise mb-10 " + (editable ? "mt-10" : "")
-          }
+          className="animate-fade-rise mb-10"
           style={{ ["--reveal-delay" as string]: "40ms" }}
         >
-          <Avatar initialUrl={settings.avatarUrl} editable={editable} />
+          <Avatar initialUrl={settings.avatarUrl} editable={false} />
         </div>
       )}
 
       <FadeIn>
-        {/* Greeting renders for visitors only — owners edit it via the
-            ViewEditorHeader's greeting input above. */}
-        {!editable && view.greeting && <ViewGreeting text={view.greeting} />}
+        {view.greeting && <ViewGreeting text={view.greeting} />}
 
         {view.showAbout && aboutMarkdown && (
           <NomoMarkdown
             body={aboutMarkdown}
             context={{ avatarUrl: settings?.avatarUrl ?? null, caseStudies }}
           />
-        )}
-
-        {editable && (
-          <div className="mt-4">
-            <Link
-              href={`/v/${view.slug}?edit=1`}
-              className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/80 px-2 py-1 text-[11px] text-muted hover:border-border hover:text-fg"
-            >
-              Edit text
-            </Link>
-          </div>
         )}
 
         {view.showProjects && galleryGroups.length > 0 && (
@@ -187,9 +130,8 @@ export default async function ViewPage({
           >
             <Gallery
               initial={galleryGroups}
-              owner={owner}
-              previewing={previewing}
-              scope={{ kind: "view", viewId: view.id }}
+              owner={false}
+              previewing
               disableLinks
             />
           </section>
