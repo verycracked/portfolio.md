@@ -77,11 +77,7 @@ export function SurfaceTabBar({
               startTransition(() => setPending(surface.slug));
             }}
             className={clsx(
-              // Equal-width: every tab is at least 120px and centers its
-              // label, so the bar geometry is identical regardless of
-              // which label is longest. `justify-center` keeps tabs
-              // visually balanced even when the labels are short.
-              "relative inline-flex min-w-[120px] items-center justify-center rounded-[8px] px-3 py-1.5 text-[12px] transition-colors",
+              "relative inline-flex items-center rounded-[8px] px-3 py-1.5 text-[12px] transition-colors",
               active
                 ? "double-stroke bg-hover font-medium text-fg"
                 : "text-muted hover:text-fg"
