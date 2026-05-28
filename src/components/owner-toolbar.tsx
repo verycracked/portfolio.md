@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Eye, EyeSlash, Link as LinkIcon } from "@phosphor-icons/react/dist/ssr";
+import {
+  Check,
+  Eye,
+  EyeSlash,
+  Gear,
+  Link as LinkIcon,
+} from "@phosphor-icons/react/dist/ssr";
 
 type Props = {
   /** True when the page is rendering the visitor-only view (?preview=1). */
@@ -10,7 +16,7 @@ type Props = {
 };
 
 /**
- * Owner-only top-right toolbar with two actions:
+ * Owner-only top-right toolbar with three actions:
  *
  *  • Preview / Exit preview — toggles `?preview=1` on the current URL.
  *    Preview mode renders the page exactly as visitors see it (no edit
@@ -18,6 +24,8 @@ type Props = {
  *  • Share link — copies the preview URL to the clipboard. The preview URL
  *    is what visitors land on; sharing the bare URL would land them on the
  *    owner view if they happen to be signed in.
+ *  • Settings — opens /settings, which hosts the Chrome snapshot extension
+ *    tokens and any other site-wide owner configuration.
  *
  * Renders nothing for visitors; gated on `owner` at the call site.
  */
@@ -80,6 +88,14 @@ export function OwnerToolbar({ previewing }: Props) {
           </>
         )}
       </button>
+      <Link
+        href="/settings"
+        aria-label="Settings"
+        title="Settings"
+        className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-[6px] border border-border-soft bg-content/80 text-muted backdrop-blur transition-colors hover:border-border hover:text-fg"
+      >
+        <Gear size={13} weight="bold" aria-hidden />
+      </Link>
     </div>
   );
 }
