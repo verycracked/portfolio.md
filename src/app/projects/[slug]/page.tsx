@@ -121,20 +121,18 @@ export default async function ProjectDetail({
         </Link>
       </FadeIn>
 
-      {/* Hero — same visual treatment as a gallery tile, scaled up to the
-          full content area. Reuses HeroVideo for video heroes so the
-          hover-play + theater behavior carries over. */}
+      {/* Hero — the project's cover, full-bleed across the content area.
+          Same 16:10 aspect + 6px corner radius as the homepage tile so
+          the framing reads as "the same tile, scaled up" when the visitor
+          clicks through. Reuses ProjectHero for video heroes (unmuted
+          autoplay + tap-to-unmute fallback). */}
       {project.heroImageUrl && (
         <div
-          className="animate-fade-rise mt-6 overflow-hidden rounded-[8px] border border-border bg-hover"
+          className="animate-fade-rise mt-6 overflow-hidden rounded-[6px] border border-border bg-hover"
           style={{ ["--reveal-delay" as string]: "40ms" }}
         >
-          <div className="relative aspect-[16/9]">
+          <div className="relative aspect-[16/10]">
             {heroIsVideo ? (
-              // ProjectHero — always tries unmuted autoplay; falls back
-              // to muted + a "Tap to unmute" chip if the browser blocks
-              // unmuted autoplay (which is common without a recent user
-              // gesture). Native controls let the viewer pause or scrub.
               <ProjectHero
                 src={project.heroImageUrl}
                 posterUrl={project.posterUrl ?? null}
