@@ -141,7 +141,8 @@ export function SortableGalleryCard({
 
   const promotedAlready = project.isOpenable || project.childCount > 0;
   const startRename = () => {
-    if (promotedAlready) return;
+    // Always allow opening — pre-fills with current title so the user can
+    // rename an existing project, not just promote a fresh media tile.
     setDraft(project.title || "");
     setRenaming(true);
   };
@@ -319,17 +320,17 @@ export function SortableGalleryCard({
           />
         </button>
       )}
-      {/* Promote-to-project chip — filled folder icon. Click opens a
-          small inline name input right next to the chip; submit promotes
-          this media tile to a project (sets title + isOpenable). Disabled
-          once promoted — deletion is the way out. Visitors never see this
-          chip (owner chrome only). */}
+      {/* Folder chip — opens an inline name input next to itself. For a
+          media tile this promotes it to a project (sets title + isOpenable).
+          For an already-promoted project it just renames. Visitors never
+          see this chip (owner chrome only). The filled background means
+          "already a project," outline means "still a media tile." */}
       {!renaming && (
         <button
           type="button"
           aria-label={
             promotedAlready
-              ? "Already a project"
+              ? "Rename this project"
               : "Promote to a project"
           }
           aria-pressed={promotedAlready}
@@ -340,15 +341,12 @@ export function SortableGalleryCard({
             startRename();
           }}
           title={
-            project.childCount > 0
-              ? "Project — has sub-projects (can't demote)"
-              : project.isOpenable
-                ? "Project — name set"
-                : "Click to make this a project"
+            promotedAlready
+              ? "Rename this project"
+              : "Click to make this a project"
           }
-          disabled={promotedAlready}
           className={
-            "absolute bottom-3 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 disabled:cursor-default disabled:hover:text-muted " +
+            "absolute bottom-3 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
             (project.heroImageUrl && isVideoUrl(project.heroImageUrl)
               ? "left-12 "
               : "left-3 ") +
