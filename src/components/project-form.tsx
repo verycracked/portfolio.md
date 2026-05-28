@@ -91,6 +91,7 @@ export function ProjectForm({ project: initial }: { project: Project }) {
       id: created.id,
       slug: created.slug,
       name: created.name,
+      description: "",
       body: "",
       heroImageUrl: null,
       order: created.order,

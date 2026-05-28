@@ -59,6 +59,7 @@ export default async function EditProject({
       id: s.id,
       slug: s.slug,
       name: s.name,
+      description: s.description,
       body: s.body,
       heroImageUrl: s.heroImageUrl,
       order: s.order,

@@ -90,6 +90,9 @@ model Surface {
   project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   slug         String
   name         String
+  // Short blurb shown under the h1 on this surface's detail page.
+  // Separate from `body` (which is the long-form markdown).
+  description  String         @default("")
   body         String         @default("")
   heroImageUrl String?
   order        Int            @default(0)

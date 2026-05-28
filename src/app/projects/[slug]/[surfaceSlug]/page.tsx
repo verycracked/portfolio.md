@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { ProjectUnlock } from "@/components/project-unlock";
 import { SurfaceTabBar } from "@/components/surface-tab-bar";
 import { OwnerToolbar } from "@/components/owner-toolbar";
+import { SurfaceHeroSlot } from "@/components/surface-hero-slot";
 import { FadeIn } from "@/components/fade-in";
 import { isVideoUrl } from "@/lib/media";
 
@@ -83,8 +84,6 @@ export default async function SurfaceDetail({
     name: s.name,
   }));
 
-  const heroIsVideo = !!surface.heroImageUrl && isVideoUrl(surface.heroImageUrl);
-
   return (
     <main className="mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
       {owner && <OwnerToolbar previewing={previewing} />}
@@ -121,49 +120,32 @@ export default async function SurfaceDetail({
       )}
 
       {/* Surface hero — fixed 16:10 frame with object-cover, matching
-          the project's main hero treatment. Falls back to the project
-          hero if the surface hasn't been given its own cover. */}
-      {(surface.heroImageUrl || project.heroImageUrl) && (
-        <div
-          className="animate-fade-rise mt-6 overflow-hidden rounded-[6px] border border-border"
-          style={{ ["--reveal-delay" as string]: "40ms" }}
-        >
-          {heroIsVideo && surface.heroImageUrl ? (
-            <div className="relative aspect-[16/10] bg-hover">
-              <video
-                src={surface.heroImageUrl}
-                aria-label={`${project.title} — ${surface.name}`}
-                className="h-full w-full object-cover"
-                muted
-                loop
-                playsInline
-                autoPlay
-                preload="metadata"
-              />
-            </div>
-          ) : (
-            <div className="relative aspect-[16/10] bg-hover">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={(surface.heroImageUrl ?? project.heroImageUrl) as string}
-                alt={`${project.title} — ${surface.name}`}
-                className="h-full w-full object-cover"
-              />
-            </div>
-          )}
-        </div>
-      )}
+          the Overview hero treatment. Owners without a hero see an
+          upload placeholder; visitors see nothing (no fallback to the
+          project hero — that read as duplicating the Overview tab). */}
+      <div
+        className="animate-fade-rise group mt-6"
+        style={{ ["--reveal-delay" as string]: "40ms" }}
+      >
+        <SurfaceHeroSlot
+          projectId={project.id}
+          surfaceId={surface.id}
+          initialHeroImageUrl={surface.heroImageUrl}
+          alt={`${project.title} — ${surface.name}`}
+          owner={owner && !previewing}
+        />
+      </div>
 
       <header
         className="animate-fade-rise mt-8 flex flex-col gap-2"
         style={{ ["--reveal-delay" as string]: "80ms" }}
       >
         <h1 className="text-[28px] font-semibold tracking-tight text-fg">
-          {project.title}
+          {surface.name}
         </h1>
-        {project.description && (
+        {surface.description && (
           <p className="max-w-3xl text-[14px] text-muted">
-            {project.description}
+            {surface.description}
           </p>
         )}
         {project.sourceUrl && (

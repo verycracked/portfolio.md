@@ -21,6 +21,7 @@ export type Surface = {
   id: string;
   slug: string;
   name: string;
+  description: string;
   body: string;
   heroImageUrl: string | null;
   order: number;
@@ -190,6 +191,23 @@ export function SurfaceEditor({
             </button>
           </p>
         )}
+      </div>
+
+      {/* Description — short blurb shown right under the surface name
+          on the public detail page. Distinct from `body` (long form). */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[11px] uppercase tracking-[0.06em] text-tertiary">
+          Description
+        </label>
+        <EditableText
+          value={surface.description}
+          onChange={(v) => debouncedSave({ description: v })}
+          placeholder="Short blurb under the title (one or two sentences)"
+          multiline
+          plainText
+          as="div"
+          className="min-h-[2.5rem] text-[14px] leading-[1.55] text-fg"
+        />
       </div>
 
       {/* Body */}

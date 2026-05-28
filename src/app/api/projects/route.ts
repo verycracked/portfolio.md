@@ -20,7 +20,15 @@ export async function GET(req: Request) {
   }
   const projects = await prisma.project.findMany({
     orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-    select: { id: true, slug: true, title: true, description: true },
+    // parentId lets the snapshot extension render parent → child grouping
+    // in its target picker. Kept additive so older clients ignore it.
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      description: true,
+      parentId: true,
+    },
   });
   return NextResponse.json(projects);
 }

@@ -6,6 +6,7 @@ import { uniqueSurfaceSlug } from "../helpers";
 type Patch = {
   name?: string;
   slug?: string;
+  description?: string;
   body?: string;
   heroImageUrl?: string | null;
   order?: number;
@@ -23,6 +24,7 @@ export async function PUT(
 
   const update: Record<string, unknown> = {};
   if (data.name !== undefined) update.name = data.name;
+  if (data.description !== undefined) update.description = data.description;
   if (data.body !== undefined) update.body = data.body;
   if (data.heroImageUrl !== undefined) update.heroImageUrl = data.heroImageUrl;
   if (data.order !== undefined) update.order = data.order;
