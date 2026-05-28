@@ -1,18 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowUpRight, ArrowLeft } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
 import { isAuthed } from "@/lib/auth";
-import { isProjectUnlocked } from "@/lib/project-auth";
 import { prisma } from "@/lib/prisma";
 import { ChildGallery } from "@/components/child-gallery";
-import { ProjectHero } from "@/components/project-hero";
-import { ProjectHeroFrame } from "@/components/project-hero-frame";
-import { OwnerToolbar } from "@/components/owner-toolbar";
-import { SurfaceTabBar } from "@/components/surface-tab-bar";
-import { ProjectUnlock } from "@/components/project-unlock";
-import { SkeletonImage } from "@/components/skeleton-image";
-import { FadeIn } from "@/components/fade-in";
-import { isVideoUrl } from "@/lib/media";
 import type { GalleryProject } from "@/components/gallery-types";
 
 /** Prepend `https://` if the owner saved a bare hostname like
@@ -24,8 +15,7 @@ function normalizeUrl(raw: string): string {
   return `https://${trimmed}`;
 }
 
-/** Show a clean hostname for the source-url link. Falls back to the raw
- *  string when URL parsing fails on the (now normalized) input. */
+/** Show a clean hostname for the source-url link. */
 function sourceUrlLabel(raw: string): string {
   try {
     return new URL(normalizeUrl(raw)).hostname.replace(/^www\./, "");
@@ -35,15 +25,16 @@ function sourceUrlLabel(raw: string): string {
 }
 
 /**
- * Public project detail page. Shows the parent's hero + name +
- * description, and below it a single-bento `<ChildGallery>` of any
- * sub-projects. Owners get the same drag-reorder / resize / upload chrome
- * on the sub-grid that they have on the homepage. Visitors see a static
- * read-only grid.
+ * Overview view at `/projects/[slug]`. Shared chrome (Back link, owner
+ * toolbar, surface tab bar, hero) lives in the layout — this page only
+ * renders the body content that the user sees BELOW the hero, which is
+ * what slides between tabs. Surfaces' own bodies live in
+ * `[surfaceSlug]/page.tsx`.
  *
- * Password-protected projects gate behind `<ProjectUnlock>` for visitors.
+ * Password protection + media-tile redirects are handled here too,
+ * since the layout doesn't know about searchParams or children counts.
  */
-export default async function ProjectDetail({
+export default async function ProjectOverview({
   params,
   searchParams,
 }: {
@@ -55,12 +46,6 @@ export default async function ProjectDetail({
   const project = await prisma.project.findUnique({
     where: { slug },
     include: {
-      // Drives the tab bar at the top of the page. Every project ships
-      // with an "overview" surface; additional surfaces are owner-added.
-      surfaces: {
-        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-        select: { id: true, slug: true, name: true },
-      },
       children: {
         orderBy: [{ order: "asc" }, { createdAt: "asc" }],
         select: {
@@ -83,8 +68,6 @@ export default async function ProjectDetail({
   if (!project) notFound();
 
   const owner = await isAuthed();
-  const isProtected = !!project.passwordHash;
-  const unlocked = isProtected ? await isProjectUnlocked(project.id) : true;
   const previewing = preview === "1";
 
   // Media tiles aren't addressable — only promoted projects (isOpenable
@@ -97,16 +80,6 @@ export default async function ProjectDetail({
     redirect(previewing ? "/?preview=1" : "/");
   }
 
-  if (isProtected && !owner && !unlocked) {
-    return (
-      <ProjectUnlock
-        projectId={project.id}
-        title={project.title}
-        description={project.description}
-      />
-    );
-  }
-
   const childGalleryData: GalleryProject[] = project.children.map(
     ({ passwordHash, _count, ...rest }) => ({
       ...rest,
@@ -115,69 +88,8 @@ export default async function ProjectDetail({
     })
   );
 
-  const heroIsVideo = !!project.heroImageUrl && isVideoUrl(project.heroImageUrl);
-
   return (
-    <main className="mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
-      {owner && <OwnerToolbar previewing={previewing} />}
-      {/* Back affordance — always present so visitors have a clear way out. */}
-      <FadeIn>
-        <Link
-          href={previewing ? "/?preview=1" : "/"}
-          className="inline-flex items-center gap-1 text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
-        >
-          <ArrowLeft size={11} weight="bold" aria-hidden />
-          Back
-        </Link>
-      </FadeIn>
-
-      {/* Surface tabs — only render when the owner has added a custom
-          surface beyond the default Overview. Overview routes back to
-          this same page; the others jump to /projects/[slug]/[surface]. */}
-      {project.surfaces.length > 1 && (
-        <div
-          className="animate-fade-rise mt-6"
-          style={{ ["--reveal-delay" as string]: "20ms" }}
-        >
-          <SurfaceTabBar
-            mode="link"
-            projectSlug={project.slug}
-            activeSlug="overview"
-            surfaces={project.surfaces}
-            previewing={previewing}
-          />
-        </div>
-      )}
-
-      {/* Hero — the project's cover, full-bleed across the content area.
-          Image and video heroes both render in a fixed 16:10 frame with
-          `object-fit: cover`; the owner can drag image heroes vertically
-          to pan into the right framing (persisted as `heroOffsetY`). */}
-      {project.heroImageUrl && (
-        <div
-          className="animate-fade-rise mt-6 overflow-hidden rounded-[6px] border border-border"
-          style={{ ["--reveal-delay" as string]: "40ms" }}
-        >
-          {heroIsVideo ? (
-            <div className="relative aspect-[16/10] bg-hover">
-              <ProjectHero
-                src={project.heroImageUrl}
-                posterUrl={project.posterUrl ?? null}
-                ariaLabel={project.title}
-              />
-            </div>
-          ) : (
-            <ProjectHeroFrame
-              projectId={project.id}
-              src={project.heroImageUrl}
-              alt={project.title}
-              initialOffsetY={project.heroOffsetY ?? 50}
-              owner={owner && !previewing}
-            />
-          )}
-        </div>
-      )}
-
+    <>
       {/* Title + description + optional source link */}
       <header
         className="animate-fade-rise mt-8 flex flex-col gap-2"
@@ -210,12 +122,6 @@ export default async function ProjectDetail({
             >
               Edit
             </Link>
-            <Link
-              href={`/projects/${project.slug}?preview=1`}
-              className="text-muted underline-offset-2 hover:text-fg hover:underline"
-            >
-              Preview as visitor
-            </Link>
           </div>
         )}
       </header>
@@ -236,6 +142,6 @@ export default async function ProjectDetail({
           />
         </section>
       ) : null}
-    </main>
+    </>
   );
 }

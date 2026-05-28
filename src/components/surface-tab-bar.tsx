@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { usePreviewing } from "@/lib/preview";
 
 type TabItem = {
   id: string;
@@ -14,17 +16,17 @@ type Props = {
   mode: "link";
   projectSlug: string;
   surfaces: TabItem[];
-  activeSlug: string;
-  /** When true, append `?preview=1` to every tab href so the visitor-
-   *  preview state survives switching surfaces. */
-  previewing?: boolean;
+  /** Optional override. If omitted, the bar derives the active slug
+   *  from the URL — which is what the shared layout relies on so the
+   *  active state stays in sync as the user clicks through tabs. */
+  activeSlug?: string;
 };
 
 /** The Overview tab maps to the project detail page itself rather than
  *  to `/projects/[slug]/overview` — that keeps the main page and the
  *  Overview surface from feeling like two separate views. Non-overview
  *  surfaces keep their nested URL. */
-function hrefFor(projectSlug: string, slug: string, previewing?: boolean) {
+function hrefFor(projectSlug: string, slug: string, previewing: boolean) {
   const base =
     slug === "overview"
       ? `/projects/${projectSlug}`
@@ -32,31 +34,47 @@ function hrefFor(projectSlug: string, slug: string, previewing?: boolean) {
   return previewing ? `${base}?preview=1` : base;
 }
 
+function activeFromPath(pathname: string, projectSlug: string): string {
+  const overviewPath = `/projects/${projectSlug}`;
+  if (pathname === overviewPath || pathname === `${overviewPath}/`) {
+    return "overview";
+  }
+  if (!pathname.startsWith(`${overviewPath}/`)) return "overview";
+  return pathname.slice(overviewPath.length + 1).split("/")[0] || "overview";
+}
+
 /**
  * Surface tab bar used on the public project page. Each tab is a real
  * Next.js <Link> so the route actually changes, but the active state is
- * tracked optimistically on click: the indicator slides the moment the
+ * tracked optimistically on click: the indicator moves the moment the
  * user clicks, well before the new server component finishes streaming.
  *
- * Sizing: every tab is rendered at the SAME width (the width of the
- * widest label) so the bar doesn't shift as the active marker moves
- * between tabs. The marker's border / shadow treatment also stays put,
- * which is what makes the swap feel smooth.
+ * Derives the active slug from the URL by default, so the bar stays in
+ * sync as the user navigates inside the shared /projects/[slug] layout
+ * (where the bar itself never unmounts).
  */
 export function SurfaceTabBar({
   projectSlug,
   surfaces,
   activeSlug,
-  previewing,
 }: Props) {
+  const pathname = usePathname() ?? "";
+  const urlActive = useMemo(
+    () => activeFromPath(pathname, projectSlug),
+    [pathname, projectSlug]
+  );
+  const previewing = usePreviewing();
+
+  const resolvedActive = activeSlug ?? urlActive;
+
   // Optimistic active slug — used so the indicator can jump immediately
-  // on click instead of waiting for the route transition to finish. We
-  // clear it when the URL prop (`activeSlug`) catches up, but until then
-  // the click target wears the active treatment.
+  // on click instead of waiting for the route transition to finish.
   const [pending, setPending] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  const displayActive = pending ?? activeSlug;
+  // Clear the optimistic state once the URL catches up.
+  const displayActive =
+    pending && pending !== resolvedActive ? pending : resolvedActive;
 
   return (
     <nav
@@ -71,9 +89,7 @@ export function SurfaceTabBar({
             href={hrefFor(projectSlug, surface.slug, previewing)}
             aria-current={active ? "page" : undefined}
             onClick={() => {
-              if (surface.slug === activeSlug) return;
-              // Move the marker now; let React's Transition machinery
-              // handle the actual route swap on a non-blocking lane.
+              if (surface.slug === resolvedActive) return;
               startTransition(() => setPending(surface.slug));
             }}
             className={clsx(

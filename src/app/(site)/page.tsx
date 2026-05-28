@@ -110,7 +110,7 @@ export default async function Home({
 
   return (
     <FadeIn>
-      {owner && <OwnerToolbar previewing={previewing} />}
+      {owner && <OwnerToolbar />}
       {owner && !previewing && <HomeDropzone />}
       <NomoMarkdown
         body={doc.body}

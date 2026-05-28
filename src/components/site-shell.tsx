@@ -26,7 +26,7 @@ export function SiteShell({ avatarUrl, owner, children }: Props) {
 
   return (
     <main className="relative mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
-      {owner && <OwnerToolbar previewing={previewing} />}
+      {owner && <OwnerToolbar />}
 
       {(editable || avatarUrl) && (
         <div

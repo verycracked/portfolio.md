@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { usePreviewing } from "@/lib/preview";
 import {
   Check,
   Eye,
@@ -10,11 +11,6 @@ import {
   Gear,
   Link as LinkIcon,
 } from "@phosphor-icons/react/dist/ssr";
-
-type Props = {
-  /** True when the page is rendering the visitor-only view (?preview=1). */
-  previewing: boolean;
-};
 
 /**
  * Owner-only top-right toolbar with three actions:
@@ -30,8 +26,12 @@ type Props = {
  *
  * Renders nothing for visitors; gated on `owner` at the call site.
  */
-export function OwnerToolbar({ previewing }: Props) {
+export function OwnerToolbar() {
   const [copied, setCopied] = useState(false);
+  // Read the current preview-mode flag from the URL bar so the toolbar
+  // can live in a server layout without that information being threaded
+  // down through props.
+  const previewing = usePreviewing();
   // Toggle preview on the CURRENT path, not always `/`. Lets owners drop
   // in/out of visitor view without losing their place in the site.
   const pathname = usePathname() || "/";
