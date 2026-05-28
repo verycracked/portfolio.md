@@ -209,7 +209,7 @@ export function ChildGallery({
   if (!editable) {
     if (projects.length === 0) return null;
     return (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px]">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px] sm:grid-flow-row-dense">
         {projects.map((p, i) => (
           <GalleryCard
             key={p.id}
@@ -238,7 +238,7 @@ export function ChildGallery({
       >
         <div
           data-reordering={activeId ? "1" : undefined}
-          className="reorder-grid grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px]"
+          className="reorder-grid grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px] sm:grid-flow-row-dense"
         >
           {projects.map((p, i) => (
             <SortableGalleryCard
