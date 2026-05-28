@@ -38,6 +38,10 @@ type Props = {
   onImagesChange: (
     update: (prev: SurfaceImage[]) => SurfaceImage[]
   ) => void;
+  /** Wraps every server write so the parent form can drive a shared
+   *  "Saving… / Saved" indicator. Identity-passes the promise so
+   *  callers' awaits / error handling stay intact. */
+  trackSave?: <T>(p: Promise<T>) => Promise<T>;
 };
 
 /**
@@ -51,7 +55,13 @@ export function SurfaceEditor({
   surface,
   onPatch,
   onImagesChange,
+  trackSave,
 }: Props) {
+  // Wrap-or-passthrough: when the parent didn't supply a tracker we
+  // still return the promise unchanged, so the editor stays usable in
+  // isolation (e.g. tests / Storybook).
+  const track = <T,>(p: Promise<T>): Promise<T> =>
+    trackSave ? trackSave(p) : p;
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heroInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
@@ -68,19 +78,19 @@ export function SurfaceEditor({
     onPatch(patch);
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(() => {
-      void saveSurface(projectId, surface.id, patch);
+      void track(saveSurface(projectId, surface.id, patch));
     }, 600);
   };
 
   const immediateSave = (patch: Partial<Surface>) => {
     onPatch(patch);
-    void saveSurface(projectId, surface.id, patch);
+    void track(saveSurface(projectId, surface.id, patch));
   };
 
   const uploadHero = async (file: File) => {
     setUploadError(null);
     try {
-      const url = await uploadFile(file, projectSlug);
+      const url = await track(uploadFile(file, projectSlug));
       immediateSave({ heroImageUrl: url });
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "upload failed");
@@ -91,7 +101,7 @@ export function SurfaceEditor({
     if (files.length === 0) return;
     setUploadError(null);
     const uploads = await Promise.allSettled(
-      files.map((f) => uploadFile(f, projectSlug))
+      files.map((f) => track(uploadFile(f, projectSlug)))
     );
     const firstFailure = uploads.find((r) => r.status === "rejected");
     if (firstFailure && firstFailure.status === "rejected") {
@@ -100,13 +110,15 @@ export function SurfaceEditor({
     }
     for (const result of uploads) {
       if (result.status !== "fulfilled") continue;
-      const image = await addSurfaceImage(projectId, surface.id, result.value);
+      const image = await track(
+        addSurfaceImage(projectId, surface.id, result.value)
+      );
       if (image) onImagesChange((prev) => [...prev, image]);
     }
   };
 
   const removeImage = async (imageId: string) => {
-    const ok = await removeSurfaceImage(projectId, imageId);
+    const ok = await track(removeSurfaceImage(projectId, imageId));
     if (ok) {
       onImagesChange((prev) => prev.filter((i) => i.id !== imageId));
     }

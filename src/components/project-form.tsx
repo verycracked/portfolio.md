@@ -7,6 +7,7 @@ import { EditableText } from "@/components/editable-text";
 import { ProjectProtectionControl } from "@/components/project-protection-control";
 import { SurfaceTabBarEditor } from "@/components/surface-tab-bar-editor";
 import { SurfaceEditor, type Surface, type SurfaceImage } from "@/components/surface-editor";
+import { SaveStatusBadge, useSaveTracker } from "@/components/save-status";
 import {
   captureUrl,
   createSurface,
@@ -40,6 +41,12 @@ export function ProjectForm({ project: initial }: { project: Project }) {
   const [slugError, setSlugError] = useState<string | null>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Drives the inline "Saving… / Saved" indicator. Every write that
+  // mutates the project (debounced field saves, immediate slug commits,
+  // surface edits via SurfaceEditor) is wrapped in `tracker.track()` so
+  // the badge reflects in-flight + just-completed writes.
+  const tracker = useSaveTracker();
+
   useEffect(
     () => () => {
       if (debounce.current) clearTimeout(debounce.current);
@@ -57,12 +64,14 @@ export function ProjectForm({ project: initial }: { project: Project }) {
   // ── Project-level field updates (title, description, sourceUrl) ──
   const debouncedProjectSave = (patch: Partial<Project>) => {
     if (debounce.current) clearTimeout(debounce.current);
-    debounce.current = setTimeout(() => void saveProject(project.id, patch), 600);
+    debounce.current = setTimeout(() => {
+      void tracker.track(saveProject(project.id, patch));
+    }, 600);
   };
 
   const updateProject = (patch: Partial<Project>, immediate = false) => {
     setProject((p) => ({ ...p, ...patch }));
-    if (immediate) void saveProject(project.id, patch);
+    if (immediate) void tracker.track(saveProject(project.id, patch));
     else debouncedProjectSave(patch);
   };
 
@@ -104,11 +113,13 @@ export function ProjectForm({ project: initial }: { project: Project }) {
   const renameSurface = async (id: string, name: string) => {
     // Optimistic name update; slug refresh comes from server response.
     patchSurface(id, { name });
-    const res = await fetch(`/api/projects/${project.id}/surfaces/${id}`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, slug: name }),
-    });
+    const res = await tracker.track(
+      fetch(`/api/projects/${project.id}/surfaces/${id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name, slug: name }),
+      })
+    );
     if (res.ok) {
       const updated = (await res.json()) as { slug: string };
       patchSurface(id, { slug: updated.slug });
@@ -132,9 +143,11 @@ export function ProjectForm({ project: initial }: { project: Project }) {
     setCaptureError(null);
     setCapturing(true);
     try {
-      const url = await captureUrl(project.sourceUrl);
+      const url = await tracker.track(captureUrl(project.sourceUrl));
       patchSurface(activeSurface.id, { heroImageUrl: url });
-      void saveSurface(project.id, activeSurface.id, { heroImageUrl: url });
+      void tracker.track(
+        saveSurface(project.id, activeSurface.id, { heroImageUrl: url })
+      );
     } catch (err) {
       setCaptureError(err instanceof Error ? err.message : "capture failed");
     } finally {
@@ -157,11 +170,13 @@ export function ProjectForm({ project: initial }: { project: Project }) {
       setSlugError(null);
       return;
     }
-    const res = await fetch(`/api/projects/${project.id}`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ slug: cleaned }),
-    });
+    const res = await tracker.track(
+      fetch(`/api/projects/${project.id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ slug: cleaned }),
+      })
+    );
     if (!res.ok) {
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       setSlugError(data.error ?? `failed (${res.status})`);
@@ -194,9 +209,10 @@ export function ProjectForm({ project: initial }: { project: Project }) {
     <div className="flex flex-col gap-10">
       {/* Status row */}
       <div
-        className="animate-fade-in flex flex-wrap items-center justify-end gap-3 text-[12px]"
+        className="animate-fade-in flex flex-wrap items-center justify-between gap-3 text-[12px]"
         style={{ ["--reveal-delay" as string]: "40ms" }}
       >
+        <SaveStatusBadge state={tracker.state} />
         <div className="flex items-center gap-4">
           <ProjectProtectionControl
             projectId={project.id}
@@ -323,6 +339,7 @@ export function ProjectForm({ project: initial }: { project: Project }) {
           onImagesChange={(update) =>
             setSurfaceImages(activeSurface.id, update)
           }
+          trackSave={tracker.track}
         />
       </div>
     </div>
