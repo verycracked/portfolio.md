@@ -163,7 +163,7 @@ export default async function ViewEditPage({
           <Gallery
             initial={galleryGroups}
             owner
-            scope={{ kind: "view", viewId: view.id }}
+            scope={{ kind: "view", viewId: view.id, viewSlug: view.slug }}
             disableLinks
           />
         </section>

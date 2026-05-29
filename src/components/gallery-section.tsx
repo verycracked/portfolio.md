@@ -132,6 +132,7 @@ export function GallerySection({
               onDemote={() => onProjectDemote(p.id)}
               onReplaceCover={(file) => onProjectReplaceCover(p.id, file)}
               onLinkChange={(links) => onProjectLinkChange(p.id, links)}
+              scope={scope}
               spanStyle={spanStyle(p.colSpan, p.rowSpan)}
               disableLinks={disableLinks}
             />

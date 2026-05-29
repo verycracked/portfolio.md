@@ -22,6 +22,7 @@ import { SkeletonImage } from "@/components/skeleton-image";
 import { MEDIA_ACCEPT, isVideoUrl } from "@/lib/media";
 import { usePreviewing, withPreview } from "@/lib/preview";
 import { MAX_SPAN, type GalleryProject, type TileLink } from "@/components/gallery-types";
+import { MAIN_SCOPE, type GalleryScope } from "@/lib/gallery-scope";
 
 // Sizes hint for the bento grid: ≥640px = at most half the 1280px content
 // area (one column out of two), below = roughly the viewport. Drives
@@ -112,6 +113,8 @@ export function GalleryCard({
 }
 
 type OwnerProps = CommonProps & {
+  /** Scope for URL construction — main page or a specific view. */
+  scope?: GalleryScope;
   onDelete: () => void;
   /** Live size update while the user is dragging the resize handle. */
   onResize: (colSpan: number, rowSpan: number) => void;
@@ -146,6 +149,7 @@ export function SortableGalleryCard({
   revealDelayMs,
   priority,
   disableLinks = false,
+  scope = MAIN_SCOPE,
   onDelete,
   onResize,
   onResizeCommit,
@@ -459,30 +463,28 @@ export function SortableGalleryCard({
       >
         <CornersOut size={13} weight="bold" aria-hidden />
       </button>
-      {/* Open project — for promoted tiles. Uses the canonical slug on
-          the main page, or canonicalSlug (from sourceProject) in view
-          editors. Hidden when there's no resolvable canonical slug. */}
-      {(() => {
-        const openSlug = disableLinks
-          ? project.canonicalSlug
-          : project.slug;
-        if (!promotedAlready || !openSlug) return null;
-        return (
-          <a
-            href={`/projects/${openSlug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Open project"
-            title="Open project"
-            className="absolute right-3 bottom-12 inline-flex h-6 items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-2 text-[10px] text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
-          >
-            <ArrowUpRight size={10} weight="bold" aria-hidden />
-            Open
-          </a>
-        );
-      })()}
+      {/* Open project — for promoted tiles. On the main page, links to
+          the canonical /projects/[slug]. In a view editor, links to the
+          view-scoped /v/[viewSlug]/[projectSlug]. */}
+      {promotedAlready && (
+        <a
+          href={
+            scope.kind === "view"
+              ? `/v/${scope.viewSlug}/${project.slug}`
+              : `/projects/${project.slug}`
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Open project"
+          title="Open project"
+          className="absolute right-3 bottom-12 inline-flex h-6 items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-2 text-[10px] text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
+        >
+          <ArrowUpRight size={10} weight="bold" aria-hidden />
+          Open
+        </a>
+      )}
       {/* Audio-enabled toggle — only relevant for video heroes. Pressed
           state (highlighted) means the "Play" CTA + theater modal are
           surfaced to visitors. */}
