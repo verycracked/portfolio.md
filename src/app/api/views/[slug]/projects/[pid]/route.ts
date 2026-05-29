@@ -10,6 +10,7 @@ type Patch = {
   heroImageUrl?: string | null;
   posterUrl?: string | null;
   hasAudio?: boolean;
+  fullVideoUrl?: string | null;
   isOpenable?: boolean;
   colSpan?: number;
   rowSpan?: number;
@@ -54,6 +55,7 @@ export async function PUT(
   if (data.heroImageUrl !== undefined) update.heroImageUrl = data.heroImageUrl;
   if (data.posterUrl !== undefined) update.posterUrl = data.posterUrl;
   if (data.hasAudio !== undefined) update.hasAudio = Boolean(data.hasAudio);
+  if (data.fullVideoUrl !== undefined) update.fullVideoUrl = data.fullVideoUrl;
   if (data.isOpenable !== undefined) update.isOpenable = Boolean(data.isOpenable);
   if (data.colSpan !== undefined) {
     update.colSpan = Math.min(12, Math.max(1, Math.round(data.colSpan)));

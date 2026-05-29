@@ -9,12 +9,16 @@ import type { TileLink } from "@/components/gallery-types";
 const HERO_SIZES = "(min-width: 640px) 50vw, 100vw";
 
 type Props = {
+  /** The preview video — plays silently on hover (desktop) or on tap (touch). */
   src: string;
   posterUrl?: string | null;
   ariaLabel: string;
-  /** Surfaces the "Play" CTA + theater modal entry point. Owners flip this
-   *  per-tile to mark videos that have meaningful audio. */
+  /** Surfaces the "Play" CTA + theater modal entry point. */
   hasAudio?: boolean;
+  /** Full-length video played in the theater modal. When set, the hero
+   *  `src` serves as a silent preview clip and this is the real video
+   *  that plays when the visitor hits Play. Null = theater plays `src`. */
+  fullVideoUrl?: string | null;
   /** Labeled links rendered next to the Play button in the hover overlay. */
   links?: TileLink[];
 };
@@ -35,7 +39,10 @@ type Props = {
  * The expand chip is the universal "play with audio" affordance — present
  * on every video regardless of whether we know it has an audio track.
  */
-export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false, links = [] }: Props) {
+export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false, fullVideoUrl, links = [] }: Props) {
+  // The theater modal plays the full video when set, otherwise falls
+  // back to the same src the hover preview uses.
+  const theaterSrc = fullVideoUrl || src;
   const videoRef = useRef<HTMLVideoElement | null>(null);
   // null until matchMedia runs — avoids SSR/CSR drift on the autoplay attr.
   const [isTouch, setIsTouch] = useState<boolean | null>(null);
@@ -80,7 +87,7 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false, links =
   // Theater modal is the same regardless of inline mode.
   const theater = theaterOpen ? (
     <TheaterModal
-      src={src}
+      src={theaterSrc}
       posterUrl={posterUrl}
       ariaLabel={ariaLabel}
       onClose={() => setTheaterOpen(false)}

@@ -321,6 +321,27 @@ export function Gallery({
     });
   };
 
+  const handleFullVideoChange = async (id: string, file: File) => {
+    const uploaded = await uploadMedia(file);
+    if (!uploaded) {
+      alert(`Couldn't upload ${file.name}`);
+      return;
+    }
+    setGroups((cur) =>
+      cur.map((g) => ({
+        ...g,
+        projects: g.projects.map((p) =>
+          p.id === id ? { ...p, fullVideoUrl: uploaded.url } : p
+        ),
+      }))
+    );
+    void fetch(projectUrl(scope, id), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fullVideoUrl: uploaded.url }),
+    });
+  };
+
   const handleReplaceCover = async (id: string, file: File) => {
     // Upload first (poster extracted client-side for videos), then PUT
     // both URLs onto the project. No optimistic update — we don't know
@@ -551,6 +572,7 @@ export function Gallery({
               onProjectPromote={(id, title) => void handlePromote(id, title)}
               onProjectDemote={(id) => void handleDemote(id)}
               onProjectReplaceCover={(id, file) => void handleReplaceCover(id, file)}
+              onProjectFullVideoChange={(id, file) => void handleFullVideoChange(id, file)}
               onProjectLinkChange={(id, links) => void handleLinkChange(id, links)}
             />
           ))}

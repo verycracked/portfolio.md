@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
   CornersOut,
   DotsSixVertical,
+  FilmStrip,
   Folder,
   Image as ImageIcon,
   LinkSimple,
@@ -86,6 +87,7 @@ export function GalleryCard({
         hasAudio={project.hasAudio}
         title={project.title}
         links={project.links}
+        fullVideoUrl={project.fullVideoUrl}
         protected={project.isProtected}
         priority={priority}
         openOverlay={clickable}
@@ -135,6 +137,8 @@ type OwnerProps = CommonProps & {
   onReplaceCover: (file: File) => void;
   /** Replace the tile's links array (add/remove/reorder). */
   onLinkChange: (links: TileLink[]) => void;
+  /** Set the full-length video URL for the theater modal. */
+  onFullVideoChange: (file: File) => void;
 };
 
 /**
@@ -158,6 +162,7 @@ export function SortableGalleryCard({
   onDemote,
   onReplaceCover,
   onLinkChange,
+  onFullVideoChange,
 }: OwnerProps) {
   const sortable = useSortable({
     id: project.id,
@@ -165,6 +170,7 @@ export function SortableGalleryCard({
   });
   const cellRef = useRef<HTMLDivElement | null>(null);
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
+  const fullVideoInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
   const previewing = usePreviewing();
   const clickable = project.childCount > 0 || project.isOpenable;
@@ -329,6 +335,7 @@ export function SortableGalleryCard({
           hasAudio={project.hasAudio}
           title={project.title}
           links={project.links}
+        fullVideoUrl={project.fullVideoUrl}
           protected={project.isProtected}
           priority={priority}
         />
@@ -519,6 +526,43 @@ export function SortableGalleryCard({
           />
         </button>
       )}
+      {/* Full-video upload — sets a separate video for the theater modal.
+          The hero stays as the silent preview clip; this is what plays
+          when visitors hit Play. Shows next to the audio toggle. */}
+      {project.heroImageUrl && isVideoUrl(project.heroImageUrl) && (
+        <>
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fullVideoInputRef.current?.click();
+            }}
+            aria-label={project.fullVideoUrl ? "Replace full video" : "Add full video"}
+            title={project.fullVideoUrl ? "Replace full video" : "Add full video for Play"}
+            className={
+              "absolute bottom-3 left-12 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
+              (project.fullVideoUrl
+                ? "bg-fg/15 text-fg"
+                : "bg-content/85")
+            }
+          >
+            <FilmStrip size={13} weight={project.fullVideoUrl ? "fill" : "regular"} aria-hidden />
+          </button>
+          <input
+            ref={fullVideoInputRef}
+            type="file"
+            accept="video/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onFullVideoChange(f);
+              e.target.value = "";
+            }}
+            className="hidden"
+          />
+        </>
+      )}
       {/* Folder chip — a true on/off toggle.
             • Not promoted (outline): single-click opens an inline name
               input; submitting promotes the tile.
@@ -620,6 +664,7 @@ function HeroFrame({
   url,
   posterUrl,
   hasAudio = false,
+  fullVideoUrl,
   title,
   links = [],
   protected: isProtected,
@@ -629,9 +674,8 @@ function HeroFrame({
   url: string | null;
   posterUrl?: string | null;
   hasAudio?: boolean;
+  fullVideoUrl?: string | null;
   title: string;
-  /** Labeled links shown as buttons on hover (or pinned at the bottom
-   *  for video tiles where hover is consumed by the Play CTA). */
   links?: TileLink[];
   protected?: boolean;
   priority?: boolean;
@@ -650,6 +694,7 @@ function HeroFrame({
             posterUrl={posterUrl ?? null}
             ariaLabel={title}
             hasAudio={hasAudio}
+            fullVideoUrl={fullVideoUrl}
             links={links}
           />
         ) : (

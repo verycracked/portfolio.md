@@ -91,6 +91,9 @@ model ViewProject {
   posterUrl    String?
   heroOffsetY  Float   @default(50)
   hasAudio     Boolean @default(false)
+  // Optional full-length video with audio. The hero (heroImageUrl) serves
+  // as the silent preview clip on hover; this plays in the theater modal.
+  fullVideoUrl String?
   isOpenable   Boolean @default(false)
   colSpan      Int     @default(6)
   rowSpan      Int     @default(6)
@@ -144,6 +147,10 @@ model Project {
   // the on-tile "Play" CTA and the theater modal entry point. Defaults to
   // false so silent screen recordings stay calm (hover preview only).
   hasAudio      Boolean         @default(false)
+  // Optional full-length video with audio. The hero (heroImageUrl) serves
+  // as the silent preview clip on hover; this plays in the theater modal
+  // when the visitor hits Play. Null = theater plays the hero itself.
+  fullVideoUrl  String?
   // Opt-in: visitor card on the homepage becomes a link to the project's
   // detail page even when it has no children. Useful for stand-alone
   // projects that have a meaningful write-up but no sub-projects.

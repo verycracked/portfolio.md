@@ -67,6 +67,7 @@ export async function seedViewFromMain(viewId: string): Promise<void> {
         posterUrl: p.posterUrl,
         heroOffsetY: p.heroOffsetY,
         hasAudio: p.hasAudio,
+        fullVideoUrl: p.fullVideoUrl,
         isOpenable: p.isOpenable,
         colSpan: p.colSpan,
         rowSpan: p.rowSpan,

@@ -72,6 +72,7 @@ export default async function ViewPage({
       sourceUrl: p.sourceUrl ?? null,
       links: Array.isArray(p.links) ? p.links as { label: string; url: string }[] : [],
       hasAudio: p.hasAudio,
+      fullVideoUrl: p.fullVideoUrl ?? null,
       isOpenable: p.isOpenable,
       isProtected: false,
       childCount: 0,

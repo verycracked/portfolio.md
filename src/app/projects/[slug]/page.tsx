@@ -74,6 +74,7 @@ export default async function ProjectOverview({
           sourceUrl: true,
             links: true,
           hasAudio: true,
+            fullVideoUrl: true,
           isOpenable: true,
           passwordHash: true,
           colSpan: true,

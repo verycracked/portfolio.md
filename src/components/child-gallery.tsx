@@ -159,6 +159,22 @@ export function ChildGallery({
     }
   };
 
+  const handleFullVideoChange = async (id: string, file: File) => {
+    const uploaded = await uploadMedia(file);
+    if (!uploaded) {
+      alert(`Couldn't upload ${file.name}`);
+      return;
+    }
+    setProjects((cur) =>
+      cur.map((p) => (p.id === id ? { ...p, fullVideoUrl: uploaded.url } : p))
+    );
+    await fetch(`/api/projects/${id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fullVideoUrl: uploaded.url }),
+    });
+  };
+
   const handleLinkChange = async (id: string, links: TileLink[]) => {
     setProjects((cur) =>
       cur.map((p) => (p.id === id ? { ...p, links } : p))
@@ -288,6 +304,7 @@ export function ChildGallery({
                 onDemote={() => void handleDemote(p.id)}
                 onReplaceCover={(file) => void handleReplaceCover(p.id, file)}
                 onLinkChange={(links) => void handleLinkChange(p.id, links)}
+                onFullVideoChange={(file) => void handleFullVideoChange(p.id, file)}
                 spanClass="animate-fade-rise"
                 spanStyle={spanStyle(p.colSpan, p.rowSpan)}
                 revealDelayMs={i * 60}

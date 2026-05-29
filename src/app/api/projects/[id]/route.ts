@@ -23,6 +23,7 @@ type Body = {
   parentId?: string | null;
   /** When true, surfaces the "Play" CTA + theater modal on the tile. */
   hasAudio?: boolean;
+  fullVideoUrl?: string | null;
   /** Force the homepage tile to be clickable even with no sub-projects. */
   isOpenable?: boolean;
   /** Labeled links shown as hover buttons on the gallery tile. */
@@ -132,6 +133,7 @@ export async function PUT(
   if (data.groupId !== undefined) update.groupId = data.groupId;
   if (data.parentId !== undefined) update.parentId = data.parentId;
   if (data.hasAudio !== undefined) update.hasAudio = Boolean(data.hasAudio);
+  if (data.fullVideoUrl !== undefined) update.fullVideoUrl = data.fullVideoUrl;
   if (data.isOpenable !== undefined) update.isOpenable = Boolean(data.isOpenable);
   if (data.heroOffsetY !== undefined) {
     const n = Number(data.heroOffsetY);

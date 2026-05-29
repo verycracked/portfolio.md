@@ -46,6 +46,7 @@ type OwnerProps = CommonProps & {
   onProjectDemote: (id: string) => void;
   onProjectReplaceCover: (id: string, file: File) => void;
   onProjectLinkChange: (id: string, links: TileLink[]) => void;
+  onProjectFullVideoChange: (id: string, file: File) => void;
 };
 
 /**
@@ -67,6 +68,7 @@ export function GallerySection({
   onProjectDemote,
   onProjectReplaceCover,
   onProjectLinkChange,
+  onProjectFullVideoChange,
 }: OwnerProps) {
   // The section as a whole is sortable (header is the drag handle).
   const sortable = useSortable({
@@ -130,6 +132,7 @@ export function GallerySection({
               onDemote={() => onProjectDemote(p.id)}
               onReplaceCover={(file) => onProjectReplaceCover(p.id, file)}
               onLinkChange={(links) => onProjectLinkChange(p.id, links)}
+              onFullVideoChange={(file) => onProjectFullVideoChange(p.id, file)}
               scope={scope}
               spanStyle={spanStyle(p.colSpan, p.rowSpan)}
             />

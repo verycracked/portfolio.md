@@ -15,6 +15,9 @@ export type GalleryProject = {
   links: TileLink[];
   /** Owner opted-in to expose "Play" CTA + theater modal. Off by default. */
   hasAudio: boolean;
+  /** Full-length video URL played in the theater modal. When set, the
+   *  hero serves as the silent preview clip and this plays on "Play". */
+  fullVideoUrl?: string | null;
   /** Owner opted-in to make the homepage tile clickable even without
    *  children — useful for stand-alone projects that have a write-up. */
   isOpenable: boolean;
