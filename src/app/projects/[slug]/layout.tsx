@@ -47,6 +47,7 @@ export default async function ProjectLayout({
       title: true,
       description: true,
       heroImageUrl: true,
+      fullVideoUrl: true,
       posterUrl: true,
       heroOffsetY: true,
       passwordHash: true,
@@ -117,6 +118,7 @@ export default async function ProjectLayout({
           projectSlug={project.slug}
           projectTitle={project.title}
           projectHeroImageUrl={project.heroImageUrl}
+          projectFullVideoUrl={project.fullVideoUrl}
           projectPosterUrl={project.posterUrl}
           projectHeroOffsetY={project.heroOffsetY ?? 50}
           surfaces={project.surfaces}

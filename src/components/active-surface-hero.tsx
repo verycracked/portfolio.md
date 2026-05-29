@@ -21,6 +21,9 @@ type Props = {
   projectTitle: string;
   /** Project's own hero — used as the cover for the Overview view. */
   projectHeroImageUrl: string | null;
+  /** Full-length video — when set, the detail page hero plays this
+   *  instead of the preview clip (heroImageUrl). */
+  projectFullVideoUrl?: string | null;
   projectPosterUrl: string | null;
   projectHeroOffsetY: number;
   surfaces: SurfaceData[];
@@ -45,6 +48,7 @@ export function ActiveSurfaceHero({
   projectSlug,
   projectTitle,
   projectHeroImageUrl,
+  projectFullVideoUrl,
   projectPosterUrl,
   projectHeroOffsetY,
   surfaces,
@@ -70,6 +74,10 @@ export function ActiveSurfaceHero({
   // to show.
   const showOverviewFrame = !surface;
 
+  // On the detail page, prefer the full video for the hero when set.
+  // The preview clip stays as the gallery tile's hover; the detail page
+  // is where the visitor expects to see the real thing.
+  const detailVideoSrc = projectFullVideoUrl || projectHeroImageUrl;
   const heroIsVideo =
     !!projectHeroImageUrl && isVideoUrl(projectHeroImageUrl);
 
@@ -88,7 +96,7 @@ export function ActiveSurfaceHero({
               heroIsVideo ? (
                 <div className="relative aspect-[16/10] overflow-hidden rounded-[6px] border border-border bg-hover">
                   <ProjectHero
-                    src={projectHeroImageUrl}
+                    src={detailVideoSrc!}
                     posterUrl={projectPosterUrl}
                     ariaLabel={projectTitle}
                   />

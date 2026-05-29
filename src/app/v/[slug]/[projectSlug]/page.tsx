@@ -64,6 +64,9 @@ export default async function ViewProjectPage({
     viewProject.heroOffsetY ?? viewProject.sourceProject?.heroOffsetY ?? 50;
   const sourceUrl =
     viewProject.sourceUrl ?? viewProject.sourceProject?.sourceUrl ?? null;
+  const fullVideoUrl =
+    viewProject.fullVideoUrl ?? null;
+  const detailVideoSrc = fullVideoUrl || heroImageUrl;
 
   const heroIsVideo = !!heroImageUrl && isVideoUrl(heroImageUrl);
 
@@ -103,7 +106,7 @@ export default async function ViewProjectPage({
           {heroIsVideo ? (
             <div className="relative aspect-[16/10] bg-hover">
               <ProjectHero
-                src={heroImageUrl}
+                src={detailVideoSrc!}
                 posterUrl={posterUrl}
                 ariaLabel={title}
               />
