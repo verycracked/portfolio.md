@@ -456,11 +456,11 @@ export function SortableGalleryCard({
       >
         <CornersOut size={13} weight="bold" aria-hidden />
       </button>
-      {/* Open project — always-visible for promoted tiles so the owner
-          can navigate into the project detail page even when the card
-          body click is consumed by drag or disabled by disableLinks
-          (view editor). Opens in a new tab to avoid losing editor state. */}
-      {promotedAlready && (
+      {/* Open project — shows for promoted tiles on the main page so
+          the owner can navigate into the detail page. Hidden in view
+          editors (disableLinks=true) because view-scoped slugs don't
+          resolve to canonical /projects/[slug] routes. */}
+      {promotedAlready && !disableLinks && (
         <a
           href={`/projects/${project.slug}`}
           target="_blank"
