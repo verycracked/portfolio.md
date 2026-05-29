@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { HomeLogoLink } from "@/components/home-logo-link";
 import { Konami } from "@/components/konami";
 import { PageTransition } from "@/components/page-transition";
-import { AgentationDev } from "@/components/agentation-dev";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -70,7 +69,6 @@ export default function RootLayout({
             <Konami />
           </div>
         </div>
-        {process.env.NODE_ENV === "development" && <AgentationDev />}
       </body>
     </html>
   );
