@@ -1,16 +1,10 @@
 import { redirect } from "next/navigation";
+import { isAuthed } from "@/lib/auth";
 
 /**
- * The /views/[slug] route used to host a separate editor for views.
- * That split was a footgun — visitors at /v/[slug] could be the owner,
- * and they'd see a read-only render with no obvious "go edit this"
- * affordance, then have to bounce to /views/[slug] to actually mutate
- * anything. Same pattern as the homepage / → owner-mode-on-/ collapses
- * to: /v/[slug] now renders the editor when the visitor is the owner,
- * and the visitor read view otherwise.
- *
- * This route still resolves so old bookmarks / share links work, but
- * it just bounces to the canonical public URL.
+ * Legacy redirect — /views/[slug] used to host the editor. Now bounces
+ * to /v/[slug]/edit for owners, /v/[slug] for visitors (so old bookmarks
+ * don't leak into the edit route).
  */
 export default async function LegacyViewEditorRedirect({
   params,
@@ -18,5 +12,6 @@ export default async function LegacyViewEditorRedirect({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  redirect(`/v/${slug}/edit`);
+  const owner = await isAuthed();
+  redirect(owner ? `/v/${slug}/edit` : `/v/${slug}`);
 }

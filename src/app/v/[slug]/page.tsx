@@ -14,6 +14,7 @@ import type { ProjectSummary } from "@/lib/case-study";
 
 export const metadata: Metadata = {
   title: { absolute: "V.C. Billingsley" },
+  robots: { index: false, follow: false },
 };
 
 /**

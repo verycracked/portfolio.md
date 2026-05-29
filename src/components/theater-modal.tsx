@@ -81,9 +81,9 @@ export function TheaterModal({ src, posterUrl, ariaLabel, onClose }: Props) {
       onTransitionEnd={onTransitionEnd}
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8"
       style={{
-        backgroundColor: isVisible ? "rgba(0,0,0,0.9)" : "rgba(0,0,0,0)",
-        backdropFilter: isVisible ? "blur(12px)" : "blur(0px)",
-        WebkitBackdropFilter: isVisible ? "blur(12px)" : "blur(0px)",
+        backgroundColor: isVisible ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0)",
+        backdropFilter: isVisible ? "blur(20px)" : "blur(0px)",
+        WebkitBackdropFilter: isVisible ? "blur(20px)" : "blur(0px)",
         transition: "background-color 350ms ease-out, backdrop-filter 350ms ease-out, -webkit-backdrop-filter 350ms ease-out",
       }}
     >
