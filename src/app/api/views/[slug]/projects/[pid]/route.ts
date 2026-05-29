@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { isAuthed } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/slug";
 
 type Patch = {
   title?: string;
+  slug?: string;
   description?: string;
   heroImageUrl?: string | null;
   posterUrl?: string | null;
@@ -32,6 +34,22 @@ export async function PUT(
 
   const update: Record<string, unknown> = {};
   if (data.title !== undefined) update.title = data.title;
+  // Derive slug from an explicit slug field, or from the title when the
+  // title changes (same auto-derive the canonical project API does).
+  // Deduped within this view's project namespace.
+  if (data.slug !== undefined || data.title !== undefined) {
+    const desired = slugify(data.slug ?? data.title ?? "") || undefined;
+    if (desired) {
+      const existing = await prisma.viewProject.findUnique({
+        where: { viewId_slug: { viewId, slug: desired } },
+      });
+      if (!existing || existing.id === pid) {
+        update.slug = desired;
+      } else {
+        update.slug = `${desired}-${pid.slice(-4)}`;
+      }
+    }
+  }
   if (data.description !== undefined) update.description = data.description;
   if (data.heroImageUrl !== undefined) update.heroImageUrl = data.heroImageUrl;
   if (data.posterUrl !== undefined) update.posterUrl = data.posterUrl;
