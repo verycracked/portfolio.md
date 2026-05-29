@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Play } from "@phosphor-icons/react/dist/ssr";
+import { ArrowUpRight, Play } from "@phosphor-icons/react/dist/ssr";
 import { SkeletonImage } from "@/components/skeleton-image";
 import { TheaterModal } from "@/components/theater-modal";
+import type { TileLink } from "@/components/gallery-types";
 
 const HERO_SIZES = "(min-width: 640px) 50vw, 100vw";
 
@@ -14,6 +15,8 @@ type Props = {
   /** Surfaces the "Play" CTA + theater modal entry point. Owners flip this
    *  per-tile to mark videos that have meaningful audio. */
   hasAudio?: boolean;
+  /** Labeled links rendered next to the Play button in the hover overlay. */
+  links?: TileLink[];
 };
 
 /**
@@ -32,7 +35,7 @@ type Props = {
  * The expand chip is the universal "play with audio" affordance — present
  * on every video regardless of whether we know it has an audio track.
  */
-export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props) {
+export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false, links = [] }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   // null until matchMedia runs — avoids SSR/CSR drift on the autoplay attr.
   const [isTouch, setIsTouch] = useState<boolean | null>(null);
@@ -110,23 +113,41 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false }: Props
             "radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0) 90%)",
         }}
       />
-      <button
-        type="button"
-        aria-label={`Play ${ariaLabel} with audio`}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          openTheater();
-        }}
+      <div
         className={
-          "absolute left-1/2 top-1/2 z-10 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 text-[15px] font-medium text-white drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)] transition-opacity duration-300 ease-out hover:text-white " +
+          "absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-3 transition-opacity duration-300 ease-out " +
           visibilityClass
         }
       >
-        <Play size={18} weight="fill" aria-hidden />
-        Play
-      </button>
+        <button
+          type="button"
+          aria-label={`Play ${ariaLabel} with audio`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openTheater();
+          }}
+          className="inline-flex items-center gap-2 rounded-[6px] bg-white/15 px-3 py-1.5 text-[13px] font-medium text-white backdrop-blur transition-colors hover:bg-white/25"
+        >
+          <Play size={15} weight="fill" aria-hidden />
+          Play
+        </button>
+        {links.map((link, i) => (
+          <a
+            key={i}
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1.5 rounded-[6px] bg-white/15 px-3 py-1.5 text-[13px] font-medium text-white backdrop-blur transition-colors hover:bg-white/25"
+          >
+            {link.label}
+            <ArrowUpRight size={12} weight="bold" className="shrink-0" />
+          </a>
+        ))}
+      </div>
     </>
   ) : null;
 

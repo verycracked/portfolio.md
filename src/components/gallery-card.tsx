@@ -628,11 +628,7 @@ function HeroFrame({
 }) {
   const hasLinks = links.length > 0;
   const hasOverlay = openOverlay || hasLinks;
-  // Video tiles with audio use the hover state for Play. Links
-  // render as small pinned pills at the bottom instead so they're
-  // always reachable.
   const isVideo = !!url && isVideoUrl(url);
-  const pinLinksToBottom = isVideo && hasAudio && hasLinks;
 
   return (
     <div className="group/tile relative flex-1 overflow-hidden rounded-[6px] border border-border bg-hover">
@@ -643,6 +639,7 @@ function HeroFrame({
             posterUrl={posterUrl ?? null}
             ariaLabel={title}
             hasAudio={hasAudio}
+            links={links}
           />
         ) : (
           <SkeletonImage
@@ -668,9 +665,11 @@ function HeroFrame({
           )}
         </div>
       )}
-      {/* Centered hover overlay — title + action buttons. Only on
-          non-pinned tiles (images, or videos without audio). */}
-      {hasOverlay && !pinLinksToBottom && (
+      {/* Centered hover overlay — title + action buttons. Rendered for
+          image tiles and videos without audio. Video tiles WITH audio
+          get their links rendered inside HeroVideo's own overlay (next
+          to the Play button) so both affordances sit in the same row. */}
+      {hasOverlay && !(isVideo && hasAudio) && (
         <>
           <div
             aria-hidden
@@ -714,26 +713,7 @@ function HeroFrame({
           </div>
         </>
       )}
-      {/* Pinned link pills — for video tiles with audio, where the
-          hover is consumed by the Play CTA. Small row of link pills
-          at the bottom so they're always clickable. */}
-      {pinLinksToBottom && (
-        <div className="absolute bottom-2 left-2 z-10 flex flex-wrap gap-1.5">
-          {links.map((link, i) => (
-            <a
-              key={i}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-2 py-0.5 text-[10px] text-muted backdrop-blur transition-colors hover:text-fg"
-            >
-              {link.label}
-              <ArrowUpRight size={9} weight="bold" className="shrink-0" />
-            </a>
-          ))}
-        </div>
-      )}
+
       {isProtected && (
         <span
           aria-label="Protected"
