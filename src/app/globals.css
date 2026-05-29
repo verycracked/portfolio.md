@@ -419,13 +419,17 @@ a, button, input, textarea, select {
 }
 
 /* ── Responsive grid span clamping ──────────────────────────────────────
-   Below md (768px), the grid is grid-cols-1, but inline gridColumn:
-   span N from spanStyle() creates implicit columns that push content
-   off-screen. Force everything to span 1 on smaller screens. */
+   Below md (768px), the grid is grid-cols-1 with no auto-rows, so
+   tiles size themselves. Inline gridColumn: span N from spanStyle()
+   would create implicit columns — force span 1. Row spans are also
+   overridden so the tile uses its natural aspect ratio for height
+   instead of an 80px-per-row calculation that doesn't apply on
+   mobile (auto-rows only kicks in at md). */
 @media (max-width: 767px) {
   .grid > [style*="grid-column"] {
     grid-column: span 1 / span 1 !important;
     grid-row: span 1 / span 1 !important;
+    aspect-ratio: 16 / 10;
   }
 }
 
