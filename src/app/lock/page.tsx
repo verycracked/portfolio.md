@@ -40,8 +40,7 @@ function LockForm() {
       setShake((n) => n + 1);
       return;
     }
-    router.push(next);
-    router.refresh();
+    window.location.href = next;
   };
 
   return (
@@ -74,9 +73,6 @@ function LockForm() {
           onChange={(e) => {
             setPassword(e.target.value);
             if (error) setError(null);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && password) submit(e);
           }}
           placeholder="Password"
           className="w-full rounded-[6px] border border-border-soft bg-transparent px-3 py-2.5 text-center text-[14px] text-fg outline-none transition-colors placeholder:text-tertiary focus:border-fg"
