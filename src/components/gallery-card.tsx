@@ -181,8 +181,11 @@ export function SortableGalleryCard({
 
   const commitAddLink = () => {
     const label = addLabel.trim();
-    const url = addUrl.trim();
+    let url = addUrl.trim();
     if (!label || !url) return;
+    if (!/^https?:\/\//i.test(url) && !url.startsWith("mailto:") && !url.startsWith("/")) {
+      url = `https://${url}`;
+    }
     onLinkChange([...project.links, { label, url }]);
     setAddLabel("");
     setAddUrl("");
@@ -685,8 +688,8 @@ function HeroFrame({
           />
           <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 opacity-0 transition-opacity duration-300 ease-out group-hover/tile:opacity-100">
             {title?.trim() && (
-              <span className="max-w-[80%] text-center text-[14px] font-medium leading-tight text-white drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)]">
-                <span className="line-clamp-2">{title}</span>
+              <span className="max-w-[90%] text-center text-[14px] font-medium leading-tight text-white drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)]">
+                <span className="line-clamp-2 break-all">{title}</span>
               </span>
             )}
             <div className="flex flex-wrap items-center justify-center gap-2">
