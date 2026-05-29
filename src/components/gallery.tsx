@@ -28,6 +28,7 @@ import type {
   TileLink,
 } from "@/components/gallery-types";
 import { uploadMedia } from "@/lib/media-utils";
+import { slugify } from "@/lib/slug";
 import {
   groupUrl,
   groupsBase,
@@ -382,12 +383,22 @@ export function Gallery({
 
   const handlePromote = async (id: string, title: string) => {
     const snapshot = groups;
-    // Optimistic flip — show the new title and the projecty state immediately.
+    // Optimistic flip — show the new title, the projecty state, AND a
+    // best-guess slug immediately so the "Open ↗" button resolves even
+    // before the server responds with the canonical slug.
+    const optimisticSlug = slugify(title) || undefined;
     setGroups((cur) =>
       cur.map((g) => ({
         ...g,
         projects: g.projects.map((p) =>
-          p.id === id ? { ...p, isOpenable: true, title } : p
+          p.id === id
+            ? {
+                ...p,
+                isOpenable: true,
+                title,
+                ...(optimisticSlug ? { slug: optimisticSlug } : {}),
+              }
+            : p
         ),
       }))
     );
