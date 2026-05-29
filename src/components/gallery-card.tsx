@@ -543,7 +543,10 @@ export function SortableGalleryCard({
             aria-label={project.fullVideoUrl ? "Replace full video" : "Add full video"}
             title={project.fullVideoUrl ? "Replace full video" : "Add full video for Play"}
             className={
-              "absolute bottom-3 left-12 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
+              "absolute bottom-3 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
+              (project.heroImageUrl && isVideoUrl(project.heroImageUrl)
+                ? "left-12 "
+                : "left-3 ") +
               (project.fullVideoUrl
                 ? "bg-fg/15 text-fg"
                 : "bg-content/85")
@@ -607,8 +610,8 @@ export function SortableGalleryCard({
           className={
             "absolute bottom-3 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
             (project.heroImageUrl && isVideoUrl(project.heroImageUrl)
-              ? "left-12 "
-              : "left-3 ") +
+              ? "left-[5.25rem] "
+              : "left-12 ") +
             (promotedAlready
               ? "bg-fg/15 text-fg"
               : "bg-content/85")
