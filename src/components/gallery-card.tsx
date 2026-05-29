@@ -526,10 +526,11 @@ export function SortableGalleryCard({
           />
         </button>
       )}
-      {/* Full-video upload — sets a separate video for the theater modal.
-          The hero stays as the silent preview clip; this is what plays
-          when visitors hit Play. Shows next to the audio toggle. */}
-      {project.heroImageUrl && isVideoUrl(project.heroImageUrl) && (
+      {/* Full-video upload — sets a separate video for the theater modal
+          and the project detail page hero. Shows on all tiles (not just
+          video heroes) so you can pair a static screenshot cover with
+          a full walkthrough video. */}
+      {
         <>
           <button
             type="button"
@@ -562,7 +563,7 @@ export function SortableGalleryCard({
             className="hidden"
           />
         </>
-      )}
+      }
       {/* Folder chip — a true on/off toggle.
             • Not promoted (outline): single-click opens an inline name
               input; submitting promotes the tile.
