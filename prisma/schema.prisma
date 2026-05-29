@@ -82,8 +82,12 @@ model ViewProject {
   slug         String
   title        String
   description  String  @default("")
-  sourceUrl    String?
-  heroImageUrl String?
+  sourceUrl     String?
+  // Array of { label: string, url: string } rendered as hover buttons
+  // on the gallery tile. Stored as JSON so adding more link shapes
+  // later doesn't require a join table. Empty array = no links.
+  links         Json            @default("[]")
+  heroImageUrl  String?
   posterUrl    String?
   heroOffsetY  Float   @default(50)
   hasAudio     Boolean @default(false)
@@ -145,6 +149,9 @@ model Project {
   // projects that have a meaningful write-up but no sub-projects.
   isOpenable    Boolean         @default(false)
   sourceUrl     String?
+  // Array of { label: string, url: string } rendered as hover buttons
+  // on the gallery tile. Stored as JSON; empty array = no links.
+  links         Json            @default("[]")
   // HMAC hash of the visitor password. null = public. owner always has access.
   passwordHash  String?
   // Order *within* the project's group on the homepage gallery.

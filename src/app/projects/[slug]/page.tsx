@@ -72,6 +72,7 @@ export default async function ProjectOverview({
           heroImageUrl: true,
           posterUrl: true,
           sourceUrl: true,
+            links: true,
           hasAudio: true,
           isOpenable: true,
           passwordHash: true,
@@ -98,8 +99,9 @@ export default async function ProjectOverview({
   }
 
   const childGalleryData: GalleryProject[] = project.children.map(
-    ({ passwordHash, _count, ...rest }) => ({
+    ({ passwordHash, _count, links, ...rest }) => ({
       ...rest,
+      links: Array.isArray(links) ? links as { label: string; url: string }[] : [],
       isProtected: !!passwordHash,
       childCount: _count.children,
     })

@@ -25,6 +25,8 @@ type Body = {
   hasAudio?: boolean;
   /** Force the homepage tile to be clickable even with no sub-projects. */
   isOpenable?: boolean;
+  /** Labeled links shown as hover buttons on the gallery tile. */
+  links?: Array<{ label: string; url: string }>;
   /** Vertical framing (0–100) of the hero on the project detail page. */
   heroOffsetY?: number;
 };
@@ -106,6 +108,17 @@ export async function PUT(
   if (data.body !== undefined) update.body = data.body;
   if (data.heroImageUrl !== undefined) update.heroImageUrl = data.heroImageUrl;
   if (data.sourceUrl !== undefined) update.sourceUrl = data.sourceUrl;
+  if (data.links !== undefined) {
+    update.links = Array.isArray(data.links)
+      ? data.links.filter(
+          (l: unknown) =>
+            typeof l === "object" &&
+            l !== null &&
+            typeof (l as Record<string, unknown>).label === "string" &&
+            typeof (l as Record<string, unknown>).url === "string"
+        )
+      : [];
+  }
   if (data.order !== undefined) update.order = data.order;
   // Spans are clamped to the bento grid's column count (currently 12).
   // The DB column stays an Int with no DB-side check, so we own the

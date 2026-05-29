@@ -67,6 +67,7 @@ export default async function ViewPage({
       heroImageUrl: p.heroImageUrl,
       posterUrl: p.posterUrl,
       sourceUrl: p.sourceUrl ?? null,
+      links: Array.isArray(p.links) ? p.links as { label: string; url: string }[] : [],
       hasAudio: p.hasAudio,
       isOpenable: p.isOpenable,
       isProtected: false,

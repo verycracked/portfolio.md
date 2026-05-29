@@ -12,6 +12,7 @@ type Patch = {
   colSpan?: number;
   rowSpan?: number;
   heroOffsetY?: number;
+  links?: Array<{ label: string; url: string }>;
   parentId?: string | null;
   viewGroupId?: string | null;
 };
@@ -47,6 +48,17 @@ export async function PUT(
     if (Number.isFinite(n)) {
       update.heroOffsetY = Math.max(0, Math.min(100, n));
     }
+  }
+  if (data.links !== undefined) {
+    update.links = Array.isArray(data.links)
+      ? data.links.filter(
+          (l: unknown) =>
+            typeof l === "object" &&
+            l !== null &&
+            typeof (l as Record<string, unknown>).label === "string" &&
+            typeof (l as Record<string, unknown>).url === "string"
+        )
+      : [];
   }
   if (data.parentId !== undefined) update.parentId = data.parentId;
   if (data.viewGroupId !== undefined) update.viewGroupId = data.viewGroupId;

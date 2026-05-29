@@ -1,3 +1,5 @@
+export type TileLink = { label: string; url: string };
+
 export type GalleryProject = {
   id: string;
   slug: string;
@@ -7,8 +9,10 @@ export type GalleryProject = {
   /** First-frame still for videos. Null for image heroes and for legacy
    *  video uploads that predate poster extraction. */
   posterUrl: string | null;
-  /** Optional external link shown as a "Visit ↗" button on tile hover. */
+  /** Legacy single external link (still read for hover "Visit" button). */
   sourceUrl?: string | null;
+  /** Multiple labeled links shown as hover buttons on the tile. */
+  links: TileLink[];
   /** Owner opted-in to expose "Play" CTA + theater modal. Off by default. */
   hasAudio: boolean;
   /** Owner opted-in to make the homepage tile clickable even without
@@ -33,6 +37,18 @@ export type GalleryGroup = {
   order: number;
   projects: GalleryProject[];
 };
+
+/** Parse the Json `links` column into a typed array. */
+export function parseLinks(raw: unknown): TileLink[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (x): x is TileLink =>
+      typeof x === "object" &&
+      x !== null &&
+      typeof x.label === "string" &&
+      typeof x.url === "string"
+  );
+}
 
 /** Total columns the desktop bento grid uses. Cards span 1..MAX_SPAN of
  *  these. Bumped from the old 2-col bento so the resize handle can

@@ -25,6 +25,7 @@ import {
 import type {
   GalleryGroup,
   GalleryProject,
+  TileLink,
 } from "@/components/gallery-types";
 import { uploadMedia } from "@/lib/media-utils";
 import {
@@ -305,19 +306,19 @@ export function Gallery({
     }
   };
 
-  const handleLinkChange = async (id: string, url: string) => {
+  const handleLinkChange = async (id: string, links: TileLink[]) => {
     setGroups((cur) =>
       cur.map((g) => ({
         ...g,
         projects: g.projects.map((p) =>
-          p.id === id ? { ...p, sourceUrl: url || null } : p
+          p.id === id ? { ...p, links } : p
         ),
       }))
     );
     await fetch(projectUrl(scope, id), {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ sourceUrl: url || null }),
+      body: JSON.stringify({ links }),
     });
   };
 
@@ -542,7 +543,7 @@ export function Gallery({
               onProjectPromote={(id, title) => void handlePromote(id, title)}
               onProjectDemote={(id) => void handleDemote(id)}
               onProjectReplaceCover={(id, file) => void handleReplaceCover(id, file)}
-              onProjectLinkChange={(id, url) => void handleLinkChange(id, url)}
+              onProjectLinkChange={(id, links) => void handleLinkChange(id, links)}
             />
           ))}
         </div>

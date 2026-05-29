@@ -46,6 +46,7 @@ export default async function Home({
             heroImageUrl: true,
             posterUrl: true,
             sourceUrl: true,
+            links: true,
             hasAudio: true,
             isOpenable: true,
             passwordHash: true,
@@ -92,8 +93,9 @@ export default async function Home({
     name: g.name,
     linkUrl: g.linkUrl ?? "",
     order: g.order,
-    projects: g.projects.map(({ passwordHash, _count, ...rest }) => ({
+    projects: g.projects.map(({ passwordHash, _count, links, ...rest }) => ({
       ...rest,
+      links: Array.isArray(links) ? links as { label: string; url: string }[] : [],
       isProtected: !!passwordHash,
       childCount: _count.children,
     })),

@@ -17,7 +17,7 @@ import {
   SortableGalleryCard,
 } from "@/components/gallery-card";
 import { NewTile } from "@/components/new-tile";
-import { spanStyle, type GalleryProject } from "@/components/gallery-types";
+import { spanStyle, type GalleryProject, type TileLink } from "@/components/gallery-types";
 import { uploadMedia } from "@/lib/media-utils";
 
 const SAVE_DEBOUNCE_MS = 350;
@@ -159,14 +159,14 @@ export function ChildGallery({
     }
   };
 
-  const handleLinkChange = async (id: string, url: string) => {
+  const handleLinkChange = async (id: string, links: TileLink[]) => {
     setProjects((cur) =>
-      cur.map((p) => (p.id === id ? { ...p, sourceUrl: url || null } : p))
+      cur.map((p) => (p.id === id ? { ...p, links } : p))
     );
     await fetch(`/api/projects/${id}`, {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ sourceUrl: url || null }),
+      body: JSON.stringify({ links }),
     });
   };
 
@@ -287,7 +287,7 @@ export function ChildGallery({
                 onPromote={(title) => void handlePromote(p.id, title)}
                 onDemote={() => void handleDemote(p.id)}
                 onReplaceCover={(file) => void handleReplaceCover(p.id, file)}
-                onLinkChange={(url) => void handleLinkChange(p.id, url)}
+                onLinkChange={(links) => void handleLinkChange(p.id, links)}
                 spanClass="animate-fade-rise"
                 spanStyle={spanStyle(p.colSpan, p.rowSpan)}
                 revealDelayMs={i * 60}

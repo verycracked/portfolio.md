@@ -16,7 +16,7 @@ import {
   SortableGalleryCard,
 } from "@/components/gallery-card";
 import { NewTile } from "@/components/new-tile";
-import { spanStyle, type GalleryGroup } from "@/components/gallery-types";
+import { spanStyle, type GalleryGroup, type TileLink } from "@/components/gallery-types";
 import { MAIN_SCOPE, type GalleryScope } from "@/lib/gallery-scope";
 
 
@@ -46,7 +46,7 @@ type OwnerProps = CommonProps & {
   onProjectPromote: (id: string, title: string) => void;
   onProjectDemote: (id: string) => void;
   onProjectReplaceCover: (id: string, file: File) => void;
-  onProjectLinkChange: (id: string, url: string) => void;
+  onProjectLinkChange: (id: string, links: TileLink[]) => void;
 };
 
 /**
@@ -131,7 +131,7 @@ export function GallerySection({
               onPromote={(title) => onProjectPromote(p.id, title)}
               onDemote={() => onProjectDemote(p.id)}
               onReplaceCover={(file) => onProjectReplaceCover(p.id, file)}
-              onLinkChange={(url) => onProjectLinkChange(p.id, url)}
+              onLinkChange={(links) => onProjectLinkChange(p.id, links)}
               spanStyle={spanStyle(p.colSpan, p.rowSpan)}
               disableLinks={disableLinks}
             />

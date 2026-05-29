@@ -21,7 +21,7 @@ import { HeroVideo } from "@/components/hero-video";
 import { SkeletonImage } from "@/components/skeleton-image";
 import { MEDIA_ACCEPT, isVideoUrl } from "@/lib/media";
 import { usePreviewing, withPreview } from "@/lib/preview";
-import { MAX_SPAN, type GalleryProject } from "@/components/gallery-types";
+import { MAX_SPAN, type GalleryProject, type TileLink } from "@/components/gallery-types";
 
 // Sizes hint for the bento grid: ≥640px = at most half the 1280px content
 // area (one column out of two), below = roughly the viewport. Drives
@@ -83,7 +83,7 @@ export function GalleryCard({
         posterUrl={project.posterUrl}
         hasAudio={project.hasAudio}
         title={project.title}
-        sourceUrl={project.sourceUrl}
+        links={project.links}
         protected={project.isProtected}
         priority={priority}
         openOverlay={clickable}
@@ -129,8 +129,8 @@ type OwnerProps = CommonProps & {
   /** Swap the cover for an uploaded file. Caller handles the upload +
    *  poster extraction + PUT. */
   onReplaceCover: (file: File) => void;
-  /** Set or clear the external link shown on hover as a "Visit" button. */
-  onLinkChange: (url: string) => void;
+  /** Replace the tile's links array (add/remove/reorder). */
+  onLinkChange: (links: TileLink[]) => void;
 };
 
 /**
@@ -173,24 +173,22 @@ export function SortableGalleryCard({
     if (renaming) renameInputRef.current?.select();
   }, [renaming]);
 
-  // Inline link editing — small input next to the link chip.
-  const [editingLink, setEditingLink] = useState(false);
-  const [linkDraft, setLinkDraft] = useState(project.sourceUrl ?? "");
-  const linkInputRef = useRef<HTMLInputElement | null>(null);
-  useEffect(() => {
-    if (editingLink) linkInputRef.current?.select();
-  }, [editingLink]);
-  const startLinkEdit = () => {
-    setLinkDraft(project.sourceUrl ?? "");
-    setEditingLink(true);
+  // Multi-link editing panel — toggled by the chain-link chip.
+  const [linksOpen, setLinksOpen] = useState(false);
+  const [addLabel, setAddLabel] = useState("");
+  const [addUrl, setAddUrl] = useState("");
+  const addUrlRef = useRef<HTMLInputElement | null>(null);
+
+  const commitAddLink = () => {
+    const label = addLabel.trim();
+    const url = addUrl.trim();
+    if (!label || !url) return;
+    onLinkChange([...project.links, { label, url }]);
+    setAddLabel("");
+    setAddUrl("");
   };
-  const submitLink = () => {
-    setEditingLink(false);
-    onLinkChange(linkDraft.trim());
-  };
-  const cancelLink = () => {
-    setEditingLink(false);
-    setLinkDraft(project.sourceUrl ?? "");
+  const removeLink = (idx: number) => {
+    onLinkChange(project.links.filter((_, i) => i !== idx));
   };
 
   const promotedAlready = project.isOpenable || project.childCount > 0;
@@ -317,7 +315,7 @@ export function SortableGalleryCard({
           posterUrl={project.posterUrl}
           hasAudio={project.hasAudio}
           title={project.title}
-          sourceUrl={project.sourceUrl}
+          links={project.links}
           protected={project.isProtected}
           priority={priority}
         />
@@ -327,48 +325,85 @@ export function SortableGalleryCard({
         <DotsSixVertical size={11} weight="bold" aria-hidden />
         Drag
       </span>
-      {/* Link chip — set an external URL that shows as "Visit ↗" on hover.
-          Highlighted when a URL is already set. */}
-      {editingLink ? (
-        <input
-          ref={linkInputRef}
-          value={linkDraft}
-          onChange={(e) => setLinkDraft(e.target.value)}
-          placeholder="https://…"
-          autoFocus
-          onPointerDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              submitLink();
-            } else if (e.key === "Escape") {
-              e.preventDefault();
-              cancelLink();
-            }
-          }}
-          onBlur={submitLink}
-          className="absolute right-[5.25rem] top-3 z-30 h-6 w-[200px] rounded-[4px] border border-border bg-content/95 px-2 text-[11px] text-fg shadow-[0_4px_12px_-4px_rgb(0_0_0_/_0.4)] outline-none placeholder:text-tertiary backdrop-blur focus:border-fg"
-        />
-      ) : (
-        <button
-          type="button"
+      {/* Link chip — opens a small panel to add/remove labeled links. */}
+      <button
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setLinksOpen((v) => !v);
+        }}
+        aria-label={project.links.length > 0 ? `${project.links.length} link(s)` : "Add links"}
+        title={project.links.length > 0 ? `${project.links.length} link(s)` : "Add links"}
+        className={
+          "absolute right-[5.25rem] top-3 inline-flex h-6 w-6 items-center justify-center rounded-[4px] border border-border-soft transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
+          (project.links.length > 0
+            ? "bg-fg/15 text-fg opacity-100"
+            : "bg-content/85 text-muted opacity-0")
+        }
+      >
+        <LinkSimple size={11} weight="bold" aria-hidden />
+      </button>
+      {linksOpen && (
+        <div
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            startLinkEdit();
           }}
-          aria-label={project.sourceUrl ? `Link: ${project.sourceUrl}` : "Add link"}
-          title={project.sourceUrl ? `Link: ${project.sourceUrl}` : "Add link"}
-          className={
-            "absolute right-[5.25rem] top-3 inline-flex h-6 w-6 items-center justify-center rounded-[4px] border border-border-soft transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
-            (project.sourceUrl
-              ? "bg-fg/15 text-fg opacity-100"
-              : "bg-content/85 text-muted opacity-0")
-          }
+          className="absolute right-3 top-10 z-40 flex w-[260px] flex-col gap-2 rounded-[6px] border border-border bg-content/95 p-3 shadow-[0_8px_24px_-8px_rgb(0_0_0_/_0.5)] backdrop-blur"
         >
-          <LinkSimple size={11} weight="bold" aria-hidden />
-        </button>
+          {project.links.map((link, i) => (
+            <div key={i} className="flex items-center gap-1.5 text-[11px]">
+              <span className="truncate font-medium text-fg">{link.label}</span>
+              <span className="truncate text-tertiary">{link.url}</span>
+              <button
+                type="button"
+                onClick={() => removeLink(i)}
+                className="ml-auto shrink-0 text-tertiary hover:text-rose-400"
+                title="Remove"
+              >
+                <X size={9} weight="bold" aria-hidden />
+              </button>
+            </div>
+          ))}
+          <div className="flex flex-col gap-1.5">
+            <input
+              value={addLabel}
+              onChange={(e) => setAddLabel(e.target.value)}
+              placeholder="Label (e.g. Visit, GitHub)"
+              className="w-full rounded-[4px] border border-border-soft bg-hover px-2 py-1 text-[11px] text-fg outline-none placeholder:text-tertiary focus:border-fg"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addUrlRef.current?.focus();
+                }
+              }}
+            />
+            <input
+              ref={addUrlRef}
+              value={addUrl}
+              onChange={(e) => setAddUrl(e.target.value)}
+              placeholder="https://…"
+              className="w-full rounded-[4px] border border-border-soft bg-hover px-2 py-1 text-[11px] text-fg outline-none placeholder:text-tertiary focus:border-fg"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitAddLink();
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={commitAddLink}
+              disabled={!addLabel.trim() || !addUrl.trim()}
+              className="self-end rounded-[4px] border border-border-soft bg-content/80 px-2 py-0.5 text-[10px] text-muted hover:text-fg disabled:opacity-40"
+            >
+              + Add
+            </button>
+          </div>
+        </div>
       )}
       <button
         type="button"
@@ -551,7 +586,7 @@ function HeroFrame({
   posterUrl,
   hasAudio = false,
   title,
-  sourceUrl,
+  links = [],
   protected: isProtected,
   priority = false,
   openOverlay = false,
@@ -560,20 +595,25 @@ function HeroFrame({
   posterUrl?: string | null;
   hasAudio?: boolean;
   title: string;
-  /** External URL — renders a "Visit ↗" button on hover. */
-  sourceUrl?: string | null;
+  /** Labeled links shown as buttons on hover (or pinned at the bottom
+   *  for video tiles where hover is consumed by the Play CTA). */
+  links?: TileLink[];
   protected?: boolean;
   priority?: boolean;
-  /** Surface the "Open" hover overlay (used when the tile is a clickable
-   *  parent project on the homepage). */
   openOverlay?: boolean;
 }) {
+  const hasLinks = links.length > 0;
+  const hasOverlay = openOverlay || hasLinks;
+  // Video tiles with audio use the hover state for Play. Links
+  // render as small pinned pills at the bottom instead so they're
+  // always reachable.
+  const isVideo = !!url && isVideoUrl(url);
+  const pinLinksToBottom = isVideo && hasAudio && hasLinks;
+
   return (
-    <div className="relative flex-1 overflow-hidden rounded-[6px] border border-border bg-hover">
+    <div className="group/tile relative flex-1 overflow-hidden rounded-[6px] border border-border bg-hover">
       {url ? (
-        isVideoUrl(url) ? (
-          // HeroVideo plays on hover on desktop; on touch it shows the
-          // poster <img> and the user taps to play.
+        isVideo ? (
           <HeroVideo
             src={url}
             posterUrl={posterUrl ?? null}
@@ -587,20 +627,14 @@ function HeroFrame({
             fill
             sizes={HERO_SIZES}
             priority={priority}
-            // Skip the WebP/AVIF transcode — for UI screenshots even q=92
-            // softens text + edges visibly. Serve the raw PNG/JPEG so the
-            // gallery stays pixel-perfect at the cost of a heavier payload.
             unoptimized
             className={
               "object-cover transition-[filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
-              (openOverlay || sourceUrl ? "group-hover/tile:blur-[3px]" : "")
+              (hasOverlay ? "group-hover/tile:blur-[3px]" : "")
             }
           />
         )
       ) : (
-        // Empty hero — soft gradient + icon. Title only renders when this
-        // tile has actually been promoted to a project; media tiles
-        // (empty title) stay anonymous.
         <div className="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-hover via-content to-hover px-4 text-center text-muted">
           <ImageIcon size={20} weight="bold" aria-hidden />
           {title && (
@@ -610,10 +644,9 @@ function HeroFrame({
           )}
         </div>
       )}
-      {/* Hover overlay — shows action buttons for the tile. Only renders
-          when there's at least one action (openOverlay or sourceUrl).
-          Blur-diffuse backdrop fades in on hover; the buttons sit on top. */}
-      {(openOverlay || sourceUrl) && (
+      {/* Centered hover overlay — title + action buttons. Only on
+          non-pinned tiles (images, or videos without audio). */}
+      {hasOverlay && !pinLinksToBottom && (
         <>
           <div
             aria-hidden
@@ -633,19 +666,20 @@ function HeroFrame({
                 <span className="line-clamp-2">{title}</span>
               </span>
             )}
-            <div className="flex items-center gap-2">
-              {sourceUrl && (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {links.map((link, i) => (
                 <a
-                  href={sourceUrl}
+                  key={i}
+                  href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   className="pointer-events-auto inline-flex items-center gap-1.5 rounded-[6px] bg-white/15 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur transition-colors hover:bg-white/25"
                 >
-                  Visit
+                  {link.label}
                   <ArrowUpRight size={12} weight="bold" className="shrink-0" />
                 </a>
-              )}
+              ))}
               {openOverlay && (
                 <span className="inline-flex items-center gap-1.5 rounded-[6px] bg-white/15 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur">
                   Open
@@ -655,6 +689,26 @@ function HeroFrame({
             </div>
           </div>
         </>
+      )}
+      {/* Pinned link pills — for video tiles with audio, where the
+          hover is consumed by the Play CTA. Small row of link pills
+          at the bottom so they're always clickable. */}
+      {pinLinksToBottom && (
+        <div className="absolute bottom-2 left-2 z-10 flex flex-wrap gap-1.5">
+          {links.map((link, i) => (
+            <a
+              key={i}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-2 py-0.5 text-[10px] text-muted backdrop-blur transition-colors hover:text-fg"
+            >
+              {link.label}
+              <ArrowUpRight size={9} weight="bold" className="shrink-0" />
+            </a>
+          ))}
+        </div>
       )}
       {isProtected && (
         <span
