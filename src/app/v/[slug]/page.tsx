@@ -139,7 +139,7 @@ export default async function ViewPage({
               initial={galleryGroups}
               owner={false}
               previewing
-              disableLinks
+              scope={{ kind: "view", viewId: view.id, viewSlug: view.slug }}
             />
           </section>
         )}

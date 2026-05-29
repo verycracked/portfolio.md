@@ -28,14 +28,13 @@ type VisitorProps = CommonProps & {
   /** When true, the first two tiles in this section preload eagerly
    *  (used for the first/above-the-fold section to improve LCP). */
   prioritizeFirstRow?: boolean;
+  /** Scope for tile link routing — main or view. */
+  scope?: GalleryScope;
 };
 
 type OwnerProps = CommonProps & {
-  /** Routes writes to either the main API or a per-view API. */
+  /** Routes writes + tile links to the right API / URL namespace. */
   scope?: GalleryScope;
-  /** When true, tile click-through is disabled (used in view editor where
-   *  tile slugs aren't canonical Project slugs). */
-  disableLinks?: boolean;
   onRename: (name: string) => void;
   onLinkChange: (linkUrl: string) => void;
   onDelete: () => void;
@@ -57,7 +56,6 @@ type OwnerProps = CommonProps & {
 export function GallerySection({
   group,
   scope = MAIN_SCOPE,
-  disableLinks = false,
   onRename,
   onLinkChange,
   onDelete,
@@ -134,7 +132,6 @@ export function GallerySection({
               onLinkChange={(links) => onProjectLinkChange(p.id, links)}
               scope={scope}
               spanStyle={spanStyle(p.colSpan, p.rowSpan)}
-              disableLinks={disableLinks}
             />
           ))}
         </div>
@@ -147,6 +144,7 @@ export function GallerySection({
 export function VisitorGallerySection({
   group,
   prioritizeFirstRow = false,
+  scope = MAIN_SCOPE,
 }: VisitorProps) {
   if (group.projects.length === 0) return null;
   return (
@@ -170,6 +168,7 @@ export function VisitorGallerySection({
           <GalleryCard
             key={p.id}
             project={p}
+            scope={scope}
             spanStyle={spanStyle(p.colSpan, p.rowSpan)}
             priority={prioritizeFirstRow && i < 2}
           />

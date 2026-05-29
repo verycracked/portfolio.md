@@ -164,7 +164,6 @@ export default async function ViewEditPage({
             initial={galleryGroups}
             owner
             scope={{ kind: "view", viewId: view.id, viewSlug: view.slug }}
-            disableLinks
           />
         </section>
       </FadeIn>

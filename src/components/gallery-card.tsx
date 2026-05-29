@@ -41,10 +41,9 @@ type CommonProps = {
   revealDelayMs?: number;
   /** Skip lazy loading + emit a preload for tiles above the fold. */
   priority?: boolean;
-  /** When true, the tile body never wraps in a Link and the owner-mode
-   *  click handler doesn't router.push. Used in view editors where the
-   *  per-view slug doesn't resolve to a canonical /projects/[slug] page. */
-  disableLinks?: boolean;
+  /** Scope for building tile links — main page routes to /projects/[slug],
+   *  view scope routes to /v/[viewSlug]/[projectSlug]. */
+  scope?: GalleryScope;
 };
 
 /**
@@ -59,7 +58,7 @@ export function GalleryCard({
   spanStyle,
   revealDelayMs,
   priority,
-  disableLinks = false,
+  scope = MAIN_SCOPE,
 }: CommonProps) {
   // Merge the reveal-delay CSS var (when supplied) into the same style
   // object so we only spread one prop onto the outer element.
@@ -71,11 +70,13 @@ export function GalleryCard({
       ["--reveal-delay" as string]: `${revealDelayMs}ms`,
     } as React.CSSProperties;
   })();
-  // A tile is clickable when it has children OR the owner explicitly
-  // opted in to a detail page (e.g. a stand-alone project with a
-  // meaningful write-up but no sub-projects).
-  const clickable = (project.childCount > 0 || project.isOpenable) && !disableLinks;
+  const clickable = project.childCount > 0 || project.isOpenable;
   const previewing = usePreviewing();
+
+  function tileHref(): string {
+    if (scope.kind === "view") return `/v/${scope.viewSlug}/${project.slug}`;
+    return `/projects/${project.slug}`;
+  }
 
   const body = (
     <CardShell>
@@ -95,7 +96,7 @@ export function GalleryCard({
   if (clickable) {
     return (
       <Link
-        href={withPreview(`/projects/${project.slug}`, previewing)}
+        href={withPreview(tileHref(), previewing)}
         aria-label={`Open ${project.title}`}
         className={`group/tile relative block ${spanClass}`}
         style={style}
@@ -148,7 +149,6 @@ export function SortableGalleryCard({
   spanStyle,
   revealDelayMs,
   priority,
-  disableLinks = false,
   scope = MAIN_SCOPE,
   onDelete,
   onResize,
@@ -167,7 +167,13 @@ export function SortableGalleryCard({
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
   const previewing = usePreviewing();
-  const clickable = (project.childCount > 0 || project.isOpenable) && !disableLinks;
+  const clickable = project.childCount > 0 || project.isOpenable;
+
+  function tileHref(): string {
+    if (scope.kind === "view") return `/v/${scope.viewSlug}/${project.slug}`;
+    return `/projects/${project.slug}`;
+  }
+
   // Inline rename UX — the ↗ chip below opens this overlay; the user
   // names the tile and on submit we promote it to a project.
   const [renaming, setRenaming] = useState(false);
@@ -310,7 +316,7 @@ export function SortableGalleryCard({
         // Skip if the click landed on an interactive chrome button (X /
         // resize / audio / open toggle) — those have their own handlers.
         if (target.closest("button")) return;
-        router.push(withPreview(`/projects/${project.slug}`, previewing));
+        router.push(withPreview(tileHref(), previewing));
       }}
       className={`reorder-card group relative select-none ${spanClass} ${
         clickable ? "cursor-pointer" : ""

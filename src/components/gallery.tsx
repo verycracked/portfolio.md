@@ -56,7 +56,6 @@ export function Gallery({
   owner,
   previewing = false,
   scope = MAIN_SCOPE,
-  disableLinks = false,
 }: {
   initial: GalleryGroup[];
   owner: boolean;
@@ -66,7 +65,6 @@ export function Gallery({
   scope?: GalleryScope;
   /** True in the view editor: tile slugs are view-scoped, not canonical
    *  Project slugs, so we suppress every "/projects/[slug]" link. */
-  disableLinks?: boolean;
 }) {
   const router = useRouter();
   const editable = owner && !previewing;
@@ -514,7 +512,7 @@ export function Gallery({
         {groups.map((g, gi) => (
           // First section gets eager-loaded first row (above the fold);
           // every other section lazy-loads to keep the network sane.
-          <VisitorGallerySection key={g.id} group={g} prioritizeFirstRow={gi === 0} />
+          <VisitorGallerySection key={g.id} group={g} scope={scope} prioritizeFirstRow={gi === 0} />
         ))}
       </div>
     );
@@ -543,7 +541,6 @@ export function Gallery({
               key={g.id}
               group={g}
               scope={scope}
-              disableLinks={disableLinks}
               onRename={(name) => void handleSectionRename(g.id, name)}
               onLinkChange={(url) => void handleSectionLinkChange(g.id, url)}
               onDelete={() => void handleSectionDelete(g.id)}
