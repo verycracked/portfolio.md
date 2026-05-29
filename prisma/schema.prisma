@@ -49,6 +49,7 @@ model ViewGroup {
   view      View          @relation(fields: [viewId], references: [id], onDelete: Cascade)
   slug      String
   name      String
+  linkUrl   String        @default("")
   order     Int           @default(0)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
@@ -107,6 +108,8 @@ model Group {
   id        String   @id @default(cuid())
   slug      String   @unique
   name      String
+  // Optional URL rendered as a small link next to the section name.
+  linkUrl   String   @default("")
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -89,6 +89,7 @@ export default async function Home({
     id: g.id,
     slug: g.slug,
     name: g.name,
+    linkUrl: g.linkUrl ?? "",
     order: g.order,
     projects: g.projects.map(({ passwordHash, _count, ...rest }) => ({
       ...rest,

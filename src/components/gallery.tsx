@@ -427,6 +427,17 @@ export function Gallery({
     });
   };
 
+  const handleSectionLinkChange = async (groupId: string, linkUrl: string) => {
+    setGroups((cur) =>
+      cur.map((g) => (g.id === groupId ? { ...g, linkUrl } : g))
+    );
+    await fetch(groupUrl(scope, groupId), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ linkUrl }),
+    });
+  };
+
   const handleSectionDelete = async (groupId: string) => {
     const snapshot = groups;
     setGroups((cur) => cur.filter((g) => g.id !== groupId));
@@ -506,6 +517,7 @@ export function Gallery({
               scope={scope}
               disableLinks={disableLinks}
               onRename={(name) => void handleSectionRename(g.id, name)}
+              onLinkChange={(url) => void handleSectionLinkChange(g.id, url)}
               onDelete={() => void handleSectionDelete(g.id)}
               onProjectDelete={(id) => void handleProjectDelete(id)}
               onProjectResize={handleProjectResize}

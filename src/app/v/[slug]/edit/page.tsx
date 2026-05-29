@@ -67,6 +67,7 @@ export default async function ViewEditPage({
     id: g.id,
     slug: g.slug,
     name: g.name,
+    linkUrl: g.linkUrl ?? "",
     order: g.order,
     projects: g.projects.map((p) => ({
       id: p.id,

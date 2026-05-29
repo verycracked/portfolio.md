@@ -26,6 +26,8 @@ export type GalleryGroup = {
   id: string;
   slug: string;
   name: string;
+  /** Optional URL shown as a link next to the section name. */
+  linkUrl?: string;
   order: number;
   projects: GalleryProject[];
 };

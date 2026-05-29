@@ -26,7 +26,7 @@ export async function PUT(
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { id: viewId, pid } = await params;
+  const { slug: viewId, pid } = await params;
   const data = (await req.json()) as Patch;
 
   const update: Record<string, unknown> = {};
@@ -66,7 +66,7 @@ export async function DELETE(
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { id: viewId, pid } = await params;
+  const { slug: viewId, pid } = await params;
   await prisma.viewProject.delete({ where: { id: pid, viewId } });
   return NextResponse.json({ ok: true });
 }

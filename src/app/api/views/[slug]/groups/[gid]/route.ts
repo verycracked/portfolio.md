@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { isAuthed } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-type Patch = { name?: string };
+type Patch = { name?: string; linkUrl?: string };
 
-/** PUT — rename. Slug stays stable. */
+/** PUT — update name / linkUrl. Slug stays stable. */
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ slug: string; gid: string }> }
@@ -12,10 +12,11 @@ export async function PUT(
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { id: viewId, gid } = await params;
+  const { slug: viewId, gid } = await params;
   const data = (await req.json()) as Patch;
   const update: Record<string, unknown> = {};
   if (data.name !== undefined) update.name = data.name;
+  if (data.linkUrl !== undefined) update.linkUrl = data.linkUrl.trim();
   const group = await prisma.viewGroup.update({
     where: { id: gid, viewId },
     data: update,
@@ -31,7 +32,7 @@ export async function DELETE(
   if (!(await isAuthed())) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { id: viewId, gid } = await params;
+  const { slug: viewId, gid } = await params;
   await prisma.viewGroup.delete({ where: { id: gid, viewId } });
   return NextResponse.json({ ok: true });
 }

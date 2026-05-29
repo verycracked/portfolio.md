@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { isAuthed } from "@/lib/auth";
+import { isOwnerOrBearer } from "@/lib/extension-auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slug";
 
 /**
  * POST — create a new ViewProject tile inside a view. Mirrors the
  * canonical `/api/projects` create endpoint so the client can use the
- * same shape via the gallery-scope helper.
+ * same shape via the gallery-scope helper. Owner-or-bearer auth so the
+ * snapshot extension can drop captures straight into a curated view.
  */
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  if (!(await isAuthed())) {
+  if (!(await isOwnerOrBearer(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const { slug: viewId } = await params;
@@ -85,6 +86,10 @@ export async function POST(
       rowSpan: 6,
       order,
     },
+    // Include the parent view's slug so external callers (the snapshot
+    // extension) can build the public deep link `/v/<slug>` without an
+    // extra roundtrip.
+    include: { view: { select: { slug: true } } },
   });
   return NextResponse.json(project);
 }

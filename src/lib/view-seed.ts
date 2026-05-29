@@ -45,6 +45,7 @@ export async function seedViewFromMain(viewId: string): Promise<void> {
         viewId,
         slug: group.slug,
         name: group.name,
+        linkUrl: group.linkUrl ?? "",
         order: group.order,
       },
     });

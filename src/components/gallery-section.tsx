@@ -5,7 +5,12 @@ import { useSortable } from "@dnd-kit/sortable";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
-import { DotsSixVertical, Trash } from "@phosphor-icons/react/dist/ssr";
+import {
+  ArrowUpRight,
+  DotsSixVertical,
+  LinkSimple,
+  Trash,
+} from "@phosphor-icons/react/dist/ssr";
 import {
   GalleryCard,
   SortableGalleryCard,
@@ -32,6 +37,7 @@ type OwnerProps = CommonProps & {
    *  tile slugs aren't canonical Project slugs). */
   disableLinks?: boolean;
   onRename: (name: string) => void;
+  onLinkChange: (linkUrl: string) => void;
   onDelete: () => void;
   onProjectDelete: (id: string) => void;
   onProjectResize: (id: string, c: number, r: number) => void;
@@ -52,6 +58,7 @@ export function GallerySection({
   scope = MAIN_SCOPE,
   disableLinks = false,
   onRename,
+  onLinkChange,
   onDelete,
   onProjectDelete,
   onProjectResize,
@@ -87,7 +94,9 @@ export function GallerySection({
     <section ref={setSortRef} style={style} className="flex flex-col gap-4">
       <SectionHeader
         name={group.name}
+        linkUrl={group.linkUrl ?? ""}
         onRename={onRename}
+        onLinkChange={onLinkChange}
         onDelete={onDelete}
         dragHandleProps={{
           ...sortable.attributes,
@@ -138,8 +147,19 @@ export function VisitorGallerySection({
   if (group.projects.length === 0) return null;
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="border-b border-border-soft pb-2 text-[13px] font-medium tracking-tight text-muted">
-        {group.name}
+      <h2 className="flex items-center gap-2 border-b border-border-soft pb-2 text-[13px] font-medium tracking-tight text-muted">
+        <span>{group.name}</span>
+        {group.linkUrl && (
+          <a
+            href={group.linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-tertiary transition-colors hover:text-fg"
+            title={group.linkUrl}
+          >
+            <ArrowUpRight size={11} weight="bold" aria-hidden />
+          </a>
+        )}
       </h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:auto-rows-[80px] sm:grid-flow-row-dense">
         {group.projects.map((p, i) => (
@@ -155,30 +175,38 @@ export function VisitorGallerySection({
   );
 }
 
-/* Editable header with a click-to-rename input, drag handle, and delete. */
+/* Editable header with a click-to-rename input, drag handle, link, and delete. */
 function SectionHeader({
   name,
+  linkUrl = "",
   onRename,
+  onLinkChange,
   onDelete,
   dragHandleProps,
   uploadSlot,
 }: {
   name: string;
+  linkUrl?: string;
   onRename: (name: string) => void;
+  onLinkChange: (linkUrl: string) => void;
   onDelete: () => void;
   dragHandleProps: Record<string, unknown>;
-  /** Optional upload affordance rendered between the title and the
-   *  delete button. Used by the owner section to surface the
-   *  Upload / New buttons that used to live as a tile in the grid. */
   uploadSlot?: React.ReactNode;
 }) {
   const [draft, setDraft] = useState(name);
   const [editing, setEditing] = useState(false);
+  const [linkDraft, setLinkDraft] = useState(linkUrl);
+  const [editingLink, setEditingLink] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const linkInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => setDraft(name), [name]);
+  useEffect(() => setLinkDraft(linkUrl), [linkUrl]);
   useEffect(() => {
     if (editing) inputRef.current?.select();
   }, [editing]);
+  useEffect(() => {
+    if (editingLink) linkInputRef.current?.select();
+  }, [editingLink]);
 
   const commit = () => {
     const next = draft.trim() || "Untitled";
@@ -187,10 +215,15 @@ function SectionHeader({
     setDraft(next);
   };
 
+  const commitLink = () => {
+    const next = linkDraft.trim();
+    setEditingLink(false);
+    if (next !== linkUrl) onLinkChange(next);
+    setLinkDraft(next);
+  };
+
   return (
     <div className="group/header relative flex items-center gap-2 border-b border-border-soft pb-2">
-      {/* Drag handle floats outside the header flow so the title can sit
-          flush to the left edge of the section. Shows on hover only. */}
       <button
         type="button"
         aria-label="Drag section"
@@ -222,9 +255,47 @@ function SectionHeader({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="-mx-1 flex-1 rounded-[4px] px-1 text-left text-[13px] font-medium tracking-tight text-muted hover:bg-hover hover:text-fg"
+          className="-mx-1 rounded-[4px] px-1 text-left text-[13px] font-medium tracking-tight text-muted hover:bg-hover hover:text-fg"
         >
           {name}
+        </button>
+      )}
+      {/* Link affordance — small chain icon that opens an inline URL input.
+          When a URL is set, shows the link icon highlighted; visitors see
+          the link rendered next to the section name (in VisitorGallerySection). */}
+      {editingLink ? (
+        <input
+          ref={linkInputRef}
+          value={linkDraft}
+          onChange={(e) => setLinkDraft(e.target.value)}
+          onBlur={commitLink}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              (e.currentTarget as HTMLInputElement).blur();
+            } else if (e.key === "Escape") {
+              setLinkDraft(linkUrl);
+              setEditingLink(false);
+            }
+          }}
+          placeholder="https://…"
+          className="w-[200px] bg-transparent text-[11px] text-muted outline-none placeholder:text-tertiary"
+          spellCheck={false}
+          autoFocus
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditingLink(true)}
+          title={linkUrl ? `Link: ${linkUrl}` : "Add link"}
+          className={
+            "inline-flex h-6 w-6 items-center justify-center rounded-[4px] transition-[opacity,color] " +
+            (linkUrl
+              ? "text-fg opacity-100"
+              : "text-tertiary opacity-0 hover:text-fg group-hover/header:opacity-100")
+          }
+        >
+          <LinkSimple size={12} weight="bold" aria-hidden />
         </button>
       )}
       {uploadSlot}
