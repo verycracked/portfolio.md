@@ -34,14 +34,30 @@ export function HomeLogoLink() {
     return () => el.removeEventListener("scroll", onScroll);
   }, [pathname]);
 
-  const showArrow = pathname === "/" && scrolled && hovered;
+  // On /v/... pages, the logo links back to the view's root (with
+  // the access token preserved) instead of to /. This keeps visitors
+  // contained within the view they were given access to.
+  const isViewPage = pathname.startsWith("/v/");
+  const viewHomeHref = (() => {
+    if (!isViewPage) return null;
+    const segments = pathname.split("/");
+    const viewSlug = segments[2]; // /v/<slug>/...
+    if (!viewSlug) return null;
+    if (typeof window === "undefined") return `/v/${viewSlug}`;
+    const t = new URLSearchParams(window.location.search).get("t");
+    return t ? `/v/${viewSlug}?t=${t}` : `/v/${viewSlug}`;
+  })();
+
+  const logoHref = viewHomeHref ?? withPreview("/", previewing);
+  const isHome = !isViewPage && pathname === "/";
+  const showArrow = isHome && scrolled && hovered;
 
   return (
     <Link
-      href={withPreview("/", previewing)}
+      href={logoHref}
       aria-label={showArrow ? "Back to top" : "portfolio.md home"}
       onClick={(e) => {
-        if (pathname !== "/") return;
+        if (!isHome) return;
         e.preventDefault();
         const el =
           typeof document !== "undefined"

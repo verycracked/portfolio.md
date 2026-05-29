@@ -15,6 +15,7 @@ import {
 type ViewRow = {
   id: string;
   slug: string;
+  accessToken: string;
   name: string;
   greeting: string;
   groupCount: number;
@@ -63,6 +64,7 @@ export function ViewsList({ initialViews }: Props) {
         {
           id: created.id,
           slug: created.slug,
+          accessToken: created.accessToken ?? "",
           name: created.name,
           greeting: created.greeting ?? "",
           groupCount: 0,
@@ -203,7 +205,7 @@ function ViewRowCard({
 
   const copyShareLink = async () => {
     if (typeof window === "undefined") return;
-    const url = `${window.location.origin}/v/${view.slug}`;
+    const url = `${window.location.origin}/v/${view.slug}?t=${view.accessToken}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);

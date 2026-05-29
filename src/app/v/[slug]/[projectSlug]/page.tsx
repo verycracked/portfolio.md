@@ -20,16 +20,23 @@ import { FadeIn } from "@/components/fade-in";
  */
 export default async function ViewProjectPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string; projectSlug: string }>;
+  searchParams: Promise<{ t?: string }>;
 }) {
   const { slug: viewSlug, projectSlug } = await params;
+  const { t: token } = await searchParams;
 
-  const view = await prisma.view.findUnique({
-    where: { slug: viewSlug },
-    select: { id: true, slug: true, name: true },
-  });
+  const [view, owner] = await Promise.all([
+    prisma.view.findUnique({
+      where: { slug: viewSlug },
+      select: { id: true, slug: true, name: true, accessToken: true },
+    }),
+    isAuthed(),
+  ]);
   if (!view) notFound();
+  if (!owner && view.accessToken !== token) notFound();
 
   const viewProject = await prisma.viewProject.findUnique({
     where: { viewId_slug: { viewId: view.id, slug: projectSlug } },
@@ -48,8 +55,6 @@ export default async function ViewProjectPage({
     },
   });
   if (!viewProject) notFound();
-
-  const owner = await isAuthed();
 
   // Prefer the view project's own fields; fall back to the canonical
   // source for anything the view row doesn't override.
@@ -90,7 +95,7 @@ export default async function ViewProjectPage({
     <main className="mx-auto max-w-7xl px-5 py-12 md:px-[3.75rem]">
       <FadeIn>
         <Link
-          href={owner ? `/v/${viewSlug}/edit` : `/v/${viewSlug}`}
+          href={owner ? `/v/${viewSlug}/edit` : `/v/${viewSlug}?t=${token}`}
           className="inline-flex items-center gap-1 text-[12px] text-muted underline-offset-2 hover:text-fg hover:underline"
         >
           <ArrowLeft size={11} weight="bold" aria-hidden />

@@ -24,10 +24,13 @@ export const metadata: Metadata = {
  */
 export default async function ViewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ t?: string }>;
 }) {
   const { slug } = await params;
+  const { t: token } = await searchParams;
   const [view, settings, owner] = await Promise.all([
     prisma.view.findUnique({
       where: { slug },
@@ -53,6 +56,9 @@ export default async function ViewPage({
     isAuthed(),
   ]);
   if (!view) notFound();
+  // Token gate: visitors must have ?t=<accessToken> in the URL.
+  // Owner bypasses (session cookie is enough).
+  if (!owner && view.accessToken !== token) notFound();
 
   const parsed = view.aboutBody ? matter(view.aboutBody) : { content: "" };
   const aboutMarkdown = parsed.content ?? "";
@@ -141,7 +147,7 @@ export default async function ViewPage({
               initial={galleryGroups}
               owner={false}
               previewing
-              scope={{ kind: "view", viewId: view.id, viewSlug: view.slug }}
+              scope={{ kind: "view", viewId: view.id, viewSlug: view.slug, accessToken: owner ? undefined : view.accessToken }}
             />
           </section>
         )}

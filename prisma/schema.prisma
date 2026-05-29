@@ -17,6 +17,9 @@ model View {
   // URL slug — `/v/<slug>` resolves to this view. Kept distinct from
   // `name` so the owner can rename without breaking shared links.
   slug         String   @unique
+  // Unguessable token required in ?t= query param for visitors to
+  // access this view. Owner bypasses via session cookie.
+  accessToken  String   @unique @default(cuid())
   // Owner-facing label, e.g. "Hiring managers" or "Friends".
   name         String
   // Optional one-liner for the share-banner at the top of the public

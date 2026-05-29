@@ -14,7 +14,7 @@
  */
 export type GalleryScope =
   | { kind: "main" }
-  | { kind: "view"; viewId: string; viewSlug: string };
+  | { kind: "view"; viewId: string; viewSlug: string; accessToken?: string };
 
 export const MAIN_SCOPE: GalleryScope = { kind: "main" };
 

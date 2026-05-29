@@ -76,7 +76,10 @@ export function GalleryCard({
   const previewing = usePreviewing();
 
   function tileHref(): string {
-    if (scope.kind === "view") return `/v/${scope.viewSlug}/${project.slug}`;
+    if (scope.kind === "view") {
+      const base = `/v/${scope.viewSlug}/${project.slug}`;
+      return scope.accessToken ? `${base}?t=${scope.accessToken}` : base;
+    }
     return `/projects/${project.slug}`;
   }
 
@@ -180,7 +183,10 @@ export function SortableGalleryCard({
   const clickable = project.childCount > 0 || project.isOpenable;
 
   function tileHref(): string {
-    if (scope.kind === "view") return `/v/${scope.viewSlug}/${project.slug}`;
+    if (scope.kind === "view") {
+      const base = `/v/${scope.viewSlug}/${project.slug}`;
+      return scope.accessToken ? `${base}?t=${scope.accessToken}` : base;
+    }
     return `/projects/${project.slug}`;
   }
 
@@ -501,8 +507,8 @@ export function SortableGalleryCard({
       {promotedAlready && (
         <a
           href={
-            scope.kind === "view"
-              ? `/v/${scope.viewSlug}/${project.slug}`
+             scope.kind === "view"
+              ? `/v/${scope.viewSlug}/${project.slug}${scope.accessToken ? `?t=${scope.accessToken}` : ""}`
               : `/projects/${project.slug}`
           }
           target="_blank"

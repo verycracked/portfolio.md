@@ -19,6 +19,7 @@ export default async function ViewsPage() {
     select: {
       id: true,
       slug: true,
+      accessToken: true,
       name: true,
       greeting: true,
       _count: {
@@ -33,6 +34,7 @@ export default async function ViewsPage() {
   const views = viewRows.map((v) => ({
     id: v.id,
     slug: v.slug,
+    accessToken: v.accessToken,
     name: v.name,
     greeting: v.greeting,
     groupCount: v._count.groups,
