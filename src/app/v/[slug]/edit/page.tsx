@@ -76,6 +76,7 @@ export default async function ViewEditPage({
       description: p.description,
       heroImageUrl: p.heroImageUrl,
       posterUrl: p.posterUrl,
+      sourceUrl: p.sourceUrl ?? null,
       hasAudio: p.hasAudio,
       isOpenable: p.isOpenable,
       isProtected: false,

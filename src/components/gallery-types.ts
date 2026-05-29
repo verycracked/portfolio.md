@@ -7,6 +7,8 @@ export type GalleryProject = {
   /** First-frame still for videos. Null for image heroes and for legacy
    *  video uploads that predate poster extraction. */
   posterUrl: string | null;
+  /** Optional external link shown as a "Visit ↗" button on tile hover. */
+  sourceUrl?: string | null;
   /** Owner opted-in to expose "Play" CTA + theater modal. Off by default. */
   hasAudio: boolean;
   /** Owner opted-in to make the homepage tile clickable even without

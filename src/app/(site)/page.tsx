@@ -45,6 +45,7 @@ export default async function Home({
             description: true,
             heroImageUrl: true,
             posterUrl: true,
+            sourceUrl: true,
             hasAudio: true,
             isOpenable: true,
             passwordHash: true,

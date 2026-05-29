@@ -82,10 +82,9 @@ export function GalleryCard({
         posterUrl={project.posterUrl}
         hasAudio={project.hasAudio}
         title={project.title}
+        sourceUrl={project.sourceUrl}
         protected={project.isProtected}
         priority={priority}
-        // When the tile is clickable, surface an Open CTA on hover using
-        // the same diffusion-blur treatment as the Play CTA.
         openOverlay={clickable}
       />
     </CardShell>
@@ -294,6 +293,7 @@ export function SortableGalleryCard({
           posterUrl={project.posterUrl}
           hasAudio={project.hasAudio}
           title={project.title}
+          sourceUrl={project.sourceUrl}
           protected={project.isProtected}
           priority={priority}
         />
@@ -484,6 +484,7 @@ function HeroFrame({
   posterUrl,
   hasAudio = false,
   title,
+  sourceUrl,
   protected: isProtected,
   priority = false,
   openOverlay = false,
@@ -492,9 +493,11 @@ function HeroFrame({
   posterUrl?: string | null;
   hasAudio?: boolean;
   title: string;
+  /** External URL — renders a "Visit ↗" button on hover. */
+  sourceUrl?: string | null;
   protected?: boolean;
   priority?: boolean;
-  /** Surface the "Open ↗" hover overlay (used when the tile is a clickable
+  /** Surface the "Open" hover overlay (used when the tile is a clickable
    *  parent project on the homepage). */
   openOverlay?: boolean;
 }) {
@@ -523,7 +526,7 @@ function HeroFrame({
             unoptimized
             className={
               "object-cover transition-[filter] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
-              (openOverlay ? "group-hover/tile:blur-[3px]" : "")
+              (openOverlay || sourceUrl ? "group-hover/tile:blur-[3px]" : "")
             }
           />
         )
@@ -540,7 +543,10 @@ function HeroFrame({
           )}
         </div>
       )}
-      {openOverlay && (
+      {/* Hover overlay — shows action buttons for the tile. Only renders
+          when there's at least one action (openOverlay or sourceUrl).
+          Blur-diffuse backdrop fades in on hover; the buttons sit on top. */}
+      {(openOverlay || sourceUrl) && (
         <>
           <div
             aria-hidden
@@ -554,20 +560,33 @@ function HeroFrame({
                 "radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0) 90%)",
             }}
           />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 z-10 inline-flex max-w-[80%] -translate-x-1/2 -translate-y-1/2 items-center gap-2 px-4 text-center text-[15px] font-medium text-white opacity-0 drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)] transition-opacity duration-300 ease-out group-hover/tile:opacity-100"
-          >
-            {/* If the tile has a name, show it on hover; otherwise fall
-                back to the generic "Open" verb. Either way the ↗ icon
-                tags the action as a link to a detail page. */}
-            <span className="line-clamp-2">{title?.trim() || "Open"}</span>
-            <ArrowUpRight
-              size={16}
-              weight="bold"
-              className="shrink-0"
-            />
-          </span>
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 opacity-0 transition-opacity duration-300 ease-out group-hover/tile:opacity-100">
+            {title?.trim() && (
+              <span className="max-w-[80%] text-center text-[14px] font-medium leading-tight text-white drop-shadow-[0_2px_10px_rgb(0_0_0_/_0.55)]">
+                <span className="line-clamp-2">{title}</span>
+              </span>
+            )}
+            <div className="flex items-center gap-2">
+              {sourceUrl && (
+                <a
+                  href={sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="pointer-events-auto inline-flex items-center gap-1.5 rounded-[6px] bg-white/15 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur transition-colors hover:bg-white/25"
+                >
+                  Visit
+                  <ArrowUpRight size={12} weight="bold" className="shrink-0" />
+                </a>
+              )}
+              {openOverlay && (
+                <span className="inline-flex items-center gap-1.5 rounded-[6px] bg-white/15 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur">
+                  Open
+                  <ArrowUpRight size={12} weight="bold" className="shrink-0" />
+                </span>
+              )}
+            </div>
+          </div>
         </>
       )}
       {isProtected && (

@@ -82,6 +82,7 @@ model ViewProject {
   slug         String
   title        String
   description  String  @default("")
+  sourceUrl    String?
   heroImageUrl String?
   posterUrl    String?
   heroOffsetY  Float   @default(50)
