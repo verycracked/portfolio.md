@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
 export default function LockPage() {
-  // useSearchParams() must live under Suspense for Next 16's static export.
   return (
     <Suspense fallback={null}>
       <LockForm />
@@ -41,30 +40,37 @@ function LockForm() {
   };
 
   return (
-    <main className="flex min-h-[calc(100vh-1rem)] items-center justify-center px-6">
+    <main className="flex min-h-[calc(100vh-1rem)] flex-col items-center justify-center gap-10 px-6">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/vc-logo.svg"
+        alt=""
+        className="animate-fade-rise w-[120px] opacity-80"
+        style={{ ["--reveal-delay" as string]: "0ms" }}
+      />
       <form
         key={shake}
         onSubmit={submit}
-        className={`animate-fade-rise w-full max-w-[320px] rounded-[6px] border border-border bg-content p-5 ${shake ? "animate-nudge-x" : ""}`}
+        className={`animate-fade-rise w-full max-w-[280px] ${shake ? "animate-nudge-x" : ""}`}
+        style={{ ["--reveal-delay" as string]: "80ms" }}
       >
-        <h1 className="text-[14px] font-semibold text-fg">portfolio.md</h1>
-        <p className="mt-1 mb-5 text-[13px] text-muted">Enter password to edit.</p>
         <input
           autoFocus
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (error) setError(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && password) submit(e);
+          }}
           placeholder="Password"
-          className="w-full rounded-[6px] border border-border bg-content px-3 py-2 text-fg outline-none transition-colors placeholder:text-tertiary focus:border-fg"
+          className="w-full rounded-[6px] border border-border-soft bg-transparent px-3 py-2.5 text-center text-[14px] text-fg outline-none transition-colors placeholder:text-tertiary focus:border-fg"
         />
-        {error && <p className="mt-2 text-[12px] text-muted">{error}</p>}
-        <button
-          type="submit"
-          disabled={busy || !password}
-          className="mt-4 w-full rounded-[6px] bg-fg px-4 py-2 text-[13px] font-medium text-content transition-opacity disabled:opacity-40"
-        >
-          {busy ? "Checking…" : "Unlock"}
-        </button>
+        {error && (
+          <p className="mt-3 text-center text-[12px] text-muted">{error}</p>
+        )}
       </form>
     </main>
   );
