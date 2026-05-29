@@ -46,7 +46,7 @@ function LockForm() {
 
   return (
     <main className="flex min-h-[calc(100vh-1rem)] flex-col items-center justify-center gap-10 px-6">
-      <div className="pointer-events-none" style={{ width: "min(600px, 90vw)", height: "min(600px, 90vw)" }}>
+      <div className="pointer-events-none" style={{ width: "min(300px, 90vw)", height: "min(300px, 90vw)" }}>
         <UnicornScene
           projectId="KsvQdy6ql75m1zkNeq6r"
           width="100%"
