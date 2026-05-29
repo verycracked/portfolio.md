@@ -322,9 +322,11 @@ export function Gallery({
   };
 
   const handleFullVideoChange = async (id: string, file: File) => {
-    const uploaded = await uploadMedia(file);
-    if (!uploaded) {
-      alert(`Couldn't upload ${file.name}`);
+    let uploaded: { url: string; posterUrl: string | null };
+    try {
+      uploaded = await uploadMedia(file);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : `Couldn't upload ${file.name}`);
       return;
     }
     setGroups((cur) =>
@@ -346,9 +348,11 @@ export function Gallery({
     // Upload first (poster extracted client-side for videos), then PUT
     // both URLs onto the project. No optimistic update — we don't know
     // the new R2 URL until the upload completes.
-    const uploaded = await uploadMedia(file);
-    if (!uploaded) {
-      alert(`Couldn't upload ${file.name}`);
+    let uploaded: { url: string; posterUrl: string | null };
+    try {
+      uploaded = await uploadMedia(file);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : `Couldn't upload ${file.name}`);
       return;
     }
     setGroups((cur) =>

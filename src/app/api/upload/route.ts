@@ -10,7 +10,7 @@ import { humanize, isValidSlug, slugify } from "@/lib/slug";
 // videos get a much bigger budget since even short clips routinely run past
 // the image cap.
 const MAX_BYTES_IMAGE = 8 * 1024 * 1024; // 8 MB
-const MAX_BYTES_VIDEO = 100 * 1024 * 1024; // 100 MB
+const MAX_BYTES_VIDEO = 500 * 1024 * 1024; // 500 MB
 const ALLOWED = new Set([
   "image/jpeg",
   "image/png",

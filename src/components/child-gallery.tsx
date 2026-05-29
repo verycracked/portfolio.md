@@ -160,9 +160,11 @@ export function ChildGallery({
   };
 
   const handleFullVideoChange = async (id: string, file: File) => {
-    const uploaded = await uploadMedia(file);
-    if (!uploaded) {
-      alert(`Couldn't upload ${file.name}`);
+    let uploaded: { url: string; posterUrl: string | null };
+    try {
+      uploaded = await uploadMedia(file);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : `Couldn't upload ${file.name}`);
       return;
     }
     setProjects((cur) =>
@@ -187,9 +189,11 @@ export function ChildGallery({
   };
 
   const handleReplaceCover = async (id: string, file: File) => {
-    const uploaded = await uploadMedia(file);
-    if (!uploaded) {
-      alert(`Couldn't upload ${file.name}`);
+    let uploaded: { url: string; posterUrl: string | null };
+    try {
+      uploaded = await uploadMedia(file);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : `Couldn't upload ${file.name}`);
       return;
     }
     setProjects((cur) =>

@@ -77,7 +77,7 @@ export async function extractVideoPoster(file: File): Promise<File | null> {
  */
 export async function uploadMedia(
   file: File
-): Promise<{ url: string; posterUrl: string | null } | null> {
+): Promise<{ url: string; posterUrl: string | null }> {
   let posterUrl: string | null = null;
   if (file.type.startsWith("video/")) {
     const poster = await extractVideoPoster(file).catch(() => null);
@@ -97,7 +97,13 @@ export async function uploadMedia(
   const fd = new FormData();
   fd.append("file", file);
   const res = await fetch("/api/upload", { method: "POST", body: fd });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const body = await res.json().catch(() => null) as { error?: string } | null;
+    const msg = body?.error ?? `upload failed (HTTP ${res.status})`;
+    // Attach the server error to a thrown Error so callers can show
+    // a meaningful message instead of a generic "Couldn't upload".
+    throw new Error(msg);
+  }
   const data = (await res.json()) as { url: string };
   return { url: data.url, posterUrl };
 }

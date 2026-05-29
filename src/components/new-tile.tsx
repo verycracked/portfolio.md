@@ -51,9 +51,11 @@ export function NewTile(props: Props) {
     setBusy(true);
     try {
       for (const file of files) {
-        const uploaded = await uploadMedia(file);
-        if (!uploaded) {
-          alert(`upload failed: ${file.name}`);
+        let uploaded;
+        try {
+          uploaded = await uploadMedia(file);
+        } catch (err) {
+          alert(err instanceof Error ? err.message : `upload failed: ${file.name}`);
           continue;
         }
         const proj = await fetch(projectsBase(scope), {
