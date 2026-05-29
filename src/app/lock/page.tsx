@@ -46,11 +46,11 @@ function LockForm() {
 
   return (
     <main className="flex min-h-[calc(100vh-1rem)] flex-col items-center justify-center gap-10 px-6">
-      <div className="pointer-events-none w-[280px] h-[180px]">
+      <div className="pointer-events-none w-[500px] max-w-[90vw] aspect-[16/10]">
         <UnicornScene
           projectId="KsvQdy6ql75m1zkNeq6r"
-          width="280px"
-          height="180px"
+          width="100%"
+          height="100%"
           scale={1}
           dpi={1.5}
           sdkUrl="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.0/dist/unicornStudio.umd.js"
