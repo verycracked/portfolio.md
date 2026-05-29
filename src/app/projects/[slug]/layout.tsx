@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { isAuthed } from "@/lib/auth";
 import { isProjectUnlocked } from "@/lib/project-auth";
 import { prisma } from "@/lib/prisma";
@@ -60,6 +60,7 @@ export default async function ProjectLayout({
   if (!project) notFound();
 
   const owner = await isAuthed();
+  if (!owner) redirect("/lock");
   const isProtected = !!project.passwordHash;
   const unlocked = isProtected ? await isProjectUnlocked(project.id) : true;
   if (isProtected && !owner && !unlocked) {

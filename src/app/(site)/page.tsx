@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { isAuthed } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { readNomoDocument } from "@/lib/nomo-content";
@@ -60,7 +61,8 @@ export default async function Home({
       },
     }),
   ]);
-  const editing = owner && edit === "1";
+  if (!owner) redirect("/lock");
+  const editing = edit === "1";
   const previewing = preview === "1";
 
   const allProjects = groupRows.flatMap((g) => g.projects);
