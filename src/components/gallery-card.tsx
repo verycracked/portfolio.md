@@ -7,6 +7,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   ArrowUpRight,
+  CircleNotch,
   CornersOut,
   DotsSixVertical,
   FilmStrip,
@@ -134,11 +135,12 @@ type OwnerProps = CommonProps & {
   onDemote: () => void;
   /** Swap the cover for an uploaded file. Caller handles the upload +
    *  poster extraction + PUT. */
-  onReplaceCover: (file: File) => void;
+  onReplaceCover: (file: File) => void | Promise<void>;
   /** Replace the tile's links array (add/remove/reorder). */
   onLinkChange: (links: TileLink[]) => void;
-  /** Set the full-length video URL for the theater modal. */
-  onFullVideoChange: (file: File) => void;
+  /** Set the full-length video URL for the theater modal. Returns a
+   *  promise so the card can show a loading indicator while uploading. */
+  onFullVideoChange: (file: File) => Promise<void>;
 };
 
 /**
@@ -171,6 +173,8 @@ export function SortableGalleryCard({
   const cellRef = useRef<HTMLDivElement | null>(null);
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
   const fullVideoInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const router = useRouter();
   const previewing = usePreviewing();
   const clickable = project.childCount > 0 || project.isOpenable;
@@ -431,13 +435,25 @@ export function SortableGalleryCard({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          replaceInputRef.current?.click();
+          if (!uploadingCover) replaceInputRef.current?.click();
         }}
-        aria-label="Replace cover"
-        title="Replace cover"
-        className="absolute right-12 top-3 inline-flex h-6 w-6 items-center justify-center rounded-[4px] border border-border-soft bg-content/85 text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
+        aria-label={uploadingCover ? "Uploading…" : "Replace cover"}
+        title={uploadingCover ? "Uploading cover…" : "Replace cover"}
+        className={
+          "absolute right-12 top-3 inline-flex h-6 items-center justify-center rounded-[4px] border border-border-soft text-muted transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
+          (uploadingCover
+            ? "w-auto gap-1 px-2 bg-fg/15 text-fg opacity-100"
+            : "w-6 bg-content/85 opacity-0")
+        }
       >
-        <UploadSimple size={11} weight="bold" aria-hidden />
+        {uploadingCover ? (
+          <>
+            <CircleNotch size={10} weight="bold" className="animate-spin" aria-hidden />
+            <span className="text-[10px]">Uploading…</span>
+          </>
+        ) : (
+          <UploadSimple size={11} weight="bold" aria-hidden />
+        )}
       </button>
       <input
         ref={replaceInputRef}
@@ -446,7 +462,10 @@ export function SortableGalleryCard({
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) onReplaceCover(f);
+          if (f) {
+            setUploadingCover(true);
+            void Promise.resolve(onReplaceCover(f)).finally(() => setUploadingCover(false));
+          }
           e.target.value = "";
         }}
       />
@@ -532,27 +551,34 @@ export function SortableGalleryCard({
           a full walkthrough video. */}
       {
         <>
-          <button
+           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              fullVideoInputRef.current?.click();
+              if (!uploadingVideo) fullVideoInputRef.current?.click();
             }}
-            aria-label={project.fullVideoUrl ? "Replace full video" : "Add full video"}
-            title={project.fullVideoUrl ? "Replace full video" : "Add full video for Play"}
+            aria-label={uploadingVideo ? "Uploading video…" : project.fullVideoUrl ? "Replace full video" : "Add full video"}
+            title={uploadingVideo ? "Uploading video…" : project.fullVideoUrl ? "Replace full video" : "Add full video for Play"}
             className={
-              "absolute bottom-3 inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-border-soft text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
+              "absolute bottom-3 inline-flex h-7 items-center justify-center rounded-[4px] border border-border-soft text-muted transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
               (project.heroImageUrl && isVideoUrl(project.heroImageUrl)
                 ? "left-12 "
                 : "left-3 ") +
-              (project.fullVideoUrl
-                ? "bg-fg/15 text-fg"
-                : "bg-content/85")
+              (uploadingVideo
+                ? "w-auto gap-1.5 px-2 bg-fg/15 text-fg opacity-100"
+                : "w-7 opacity-0 " + (project.fullVideoUrl ? "bg-fg/15 text-fg" : "bg-content/85"))
             }
           >
-            <FilmStrip size={13} weight={project.fullVideoUrl ? "fill" : "regular"} aria-hidden />
+            {uploadingVideo ? (
+              <>
+                <CircleNotch size={11} weight="bold" className="animate-spin" aria-hidden />
+                <span className="text-[10px]">Uploading…</span>
+              </>
+            ) : (
+              <FilmStrip size={13} weight={project.fullVideoUrl ? "fill" : "regular"} aria-hidden />
+            )}
           </button>
           <input
             ref={fullVideoInputRef}
@@ -560,7 +586,10 @@ export function SortableGalleryCard({
             accept="video/*"
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) onFullVideoChange(f);
+              if (f) {
+                setUploadingVideo(true);
+                onFullVideoChange(f).finally(() => setUploadingVideo(false));
+              }
               e.target.value = "";
             }}
             className="hidden"

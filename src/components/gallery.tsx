@@ -576,7 +576,7 @@ export function Gallery({
               onProjectPromote={(id, title) => void handlePromote(id, title)}
               onProjectDemote={(id) => void handleDemote(id)}
               onProjectReplaceCover={(id, file) => void handleReplaceCover(id, file)}
-              onProjectFullVideoChange={(id, file) => void handleFullVideoChange(id, file)}
+              onProjectFullVideoChange={(id, file) => handleFullVideoChange(id, file)}
               onProjectLinkChange={(id, links) => void handleLinkChange(id, links)}
             />
           ))}

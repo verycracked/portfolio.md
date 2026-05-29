@@ -46,7 +46,7 @@ type OwnerProps = CommonProps & {
   onProjectDemote: (id: string) => void;
   onProjectReplaceCover: (id: string, file: File) => void;
   onProjectLinkChange: (id: string, links: TileLink[]) => void;
-  onProjectFullVideoChange: (id: string, file: File) => void;
+  onProjectFullVideoChange: (id: string, file: File) => Promise<void>;
 };
 
 /**

@@ -308,7 +308,7 @@ export function ChildGallery({
                 onDemote={() => void handleDemote(p.id)}
                 onReplaceCover={(file) => void handleReplaceCover(p.id, file)}
                 onLinkChange={(links) => void handleLinkChange(p.id, links)}
-                onFullVideoChange={(file) => void handleFullVideoChange(p.id, file)}
+                onFullVideoChange={(file) => handleFullVideoChange(p.id, file)}
                 spanClass="animate-fade-rise"
                 spanStyle={spanStyle(p.colSpan, p.rowSpan)}
                 revealDelayMs={i * 60}
