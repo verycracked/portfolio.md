@@ -111,7 +111,7 @@ export function TheaterModal({ src, posterUrl, ariaLabel, onClose }: Props) {
         playsInline
         autoPlay
         onClick={(e) => e.stopPropagation()}
-        className="block max-h-[90vh] w-auto max-w-[1400px] rounded-[8px]"
+        className="block max-h-[90vh] w-full max-w-[1400px] rounded-[8px]"
         style={{
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? "scale(1)" : "scale(0.95)",
