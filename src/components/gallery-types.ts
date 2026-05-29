@@ -76,9 +76,15 @@ export function spanStyle(
   const c = Math.min(MAX_SPAN, Math.max(1, Math.round(colSpan)));
   const r = Math.min(MAX_SPAN, Math.max(1, Math.round(rowSpan)));
   return {
+    // On mobile (grid-cols-1), gridColumn is overridden by CSS to
+    // span 1 — see globals.css .reorder-grid and visitor grids.
+    // On sm (6-col), CSS clamps to min(c, 6) via the same rule.
+    // On md+ (12-col), the full span applies.
+    ["--col" as string]: c,
+    ["--row" as string]: r,
     gridColumn: `span ${c} / span ${c}`,
     gridRow: `span ${r} / span ${r}`,
-  };
+  } as React.CSSProperties;
 }
 
 /** Kept as an empty-class helper so old call sites that interpolate

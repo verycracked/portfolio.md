@@ -135,7 +135,7 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false, fullVid
             e.stopPropagation();
             openTheater();
           }}
-          className="inline-flex items-center gap-2 rounded-[6px] bg-white/15 px-3 py-1.5 text-[13px] font-medium text-white backdrop-blur transition-colors hover:bg-white/25"
+          className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-[6px] bg-white/15 px-3 py-1.5 text-[13px] font-medium text-white backdrop-blur transition-colors hover:bg-white/25"
         >
           <Play size={15} weight="fill" aria-hidden />
           Play
@@ -148,7 +148,7 @@ export function HeroVideo({ src, posterUrl, ariaLabel, hasAudio = false, fullVid
             rel="noopener noreferrer"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 rounded-[6px] bg-white/15 px-3 py-1.5 text-[13px] font-medium text-white backdrop-blur transition-colors hover:bg-white/25"
+            className="inline-flex max-w-[140px] items-center gap-1.5 truncate whitespace-nowrap rounded-[6px] bg-white/15 px-3 py-1.5 text-[13px] font-medium text-white backdrop-blur transition-colors hover:bg-white/25"
           >
             {link.label}
             <ArrowUpRight size={12} weight="bold" className="shrink-0" />

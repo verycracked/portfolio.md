@@ -749,7 +749,7 @@ function HeroFrame({
                 <span className="line-clamp-2 break-all">{title}</span>
               </span>
             )}
-            <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-2">
               {links.map((link, i) => (
                 <a
                   key={i}
@@ -757,14 +757,14 @@ function HeroFrame({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="pointer-events-auto inline-flex items-center gap-1.5 rounded-[6px] bg-white/15 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur transition-colors hover:bg-white/25"
+                  className="pointer-events-auto inline-flex max-w-[140px] items-center gap-1.5 truncate whitespace-nowrap rounded-[6px] bg-white/15 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur transition-colors hover:bg-white/25"
                 >
                   {link.label}
                   <ArrowUpRight size={12} weight="bold" className="shrink-0" />
                 </a>
               ))}
               {openOverlay && (
-                <span className="inline-flex items-center gap-1.5 rounded-[6px] bg-white/15 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur">
+                <span className="inline-flex max-w-[140px] items-center gap-1.5 truncate whitespace-nowrap rounded-[6px] bg-white/15 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur">
                   Open
                   <ArrowUpRight size={12} weight="bold" className="shrink-0" />
                 </span>
