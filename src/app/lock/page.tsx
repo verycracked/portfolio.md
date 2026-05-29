@@ -1,7 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+
+const UnicornScene = dynamic(() => import("unicornstudio-react"), {
+  ssr: false,
+});
 
 export default function LockPage() {
   return (
@@ -41,13 +46,16 @@ function LockForm() {
 
   return (
     <main className="flex min-h-[calc(100vh-1rem)] flex-col items-center justify-center gap-10 px-6">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/vc-logo.svg"
-        alt=""
-        className="animate-fade-rise w-[120px] opacity-80"
-        style={{ ["--reveal-delay" as string]: "0ms" }}
-      />
+      <div className="pointer-events-none w-[280px] h-[180px]">
+        <UnicornScene
+          projectId="KsvQdy6ql75m1zkNeq6r"
+          width="280px"
+          height="180px"
+          scale={1}
+          dpi={1.5}
+          sdkUrl="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.0/dist/unicornStudio.umd.js"
+        />
+      </div>
       <form
         key={shake}
         onSubmit={submit}
