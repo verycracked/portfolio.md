@@ -114,7 +114,7 @@ export function GallerySection({
           ref={droppable.setNodeRef}
           data-droppable-active={droppable.isOver ? "1" : undefined}
           className={
-            "reorder-grid grid grid-cols-1 gap-3 sm:grid-cols-6 sm:auto-rows-[80px] sm:grid-flow-row-dense md:grid-cols-12 " +
+            "bento-grid reorder-grid grid grid-cols-1 gap-3 sm:grid-cols-6 sm:auto-rows-[80px] sm:grid-flow-row-dense md:grid-cols-12 " +
             (droppable.isOver
               ? "rounded-[8px] ring-2 ring-fg/40 ring-offset-2 ring-offset-bg"
               : "")
@@ -166,7 +166,7 @@ export function VisitorGallerySection({
           </a>
         )}
       </h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-6 sm:auto-rows-[80px] sm:grid-flow-row-dense md:grid-cols-12">
+      <div className="bento-grid grid grid-cols-1 gap-3 sm:grid-cols-6 sm:auto-rows-[80px] sm:grid-flow-row-dense md:grid-cols-12">
         {group.projects.map((p, i) => (
           <GalleryCard
             key={p.id}

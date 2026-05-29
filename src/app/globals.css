@@ -421,16 +421,19 @@ a, button, input, textarea, select {
 /* ── Responsive grid span clamping ──────────────────────────────────────
    Inline gridColumn: span N comes from spanStyle(). On smaller grids
    those spans can exceed the column count, creating implicit columns
-   that push content off-screen. Force single-column on mobile;
-   CSS Grid auto-clamps on sm/md since grid-template-columns defines
-   the explicit column count and span values > column count are clamped
-   by the browser automatically. */
-@media (max-width: 639px) {
-  .reorder-grid > * {
+   that push content off-screen. */
+
+/* Mobile: single column, ignore all inline spans. */
+@media (max-width: 767px) {
+  .bento-grid > * {
     grid-column: span 1 / span 1 !important;
     grid-row: span 1 / span 1 !important;
   }
 }
+/* Small tablet (sm–md): 6-col grid; spans > 6 auto-clamp via CSS Grid,
+   but we need to ensure the grid container itself is set up. No extra
+   override needed — the browser clamps `span 12` to `span 6` when
+   only 6 explicit columns exist. */
 
 /* ── Reorder gesture polish ─────────────────────────────────────────────
    The dragged tile *is* the visible lifted card — dnd-kit applies its
