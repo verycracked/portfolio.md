@@ -159,6 +159,17 @@ export function ChildGallery({
     }
   };
 
+  const handleLinkChange = async (id: string, url: string) => {
+    setProjects((cur) =>
+      cur.map((p) => (p.id === id ? { ...p, sourceUrl: url || null } : p))
+    );
+    await fetch(`/api/projects/${id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sourceUrl: url || null }),
+    });
+  };
+
   const handleReplaceCover = async (id: string, file: File) => {
     const uploaded = await uploadMedia(file);
     if (!uploaded) {
@@ -276,6 +287,7 @@ export function ChildGallery({
                 onPromote={(title) => void handlePromote(p.id, title)}
                 onDemote={() => void handleDemote(p.id)}
                 onReplaceCover={(file) => void handleReplaceCover(p.id, file)}
+                onLinkChange={(url) => void handleLinkChange(p.id, url)}
                 spanClass="animate-fade-rise"
                 spanStyle={spanStyle(p.colSpan, p.rowSpan)}
                 revealDelayMs={i * 60}

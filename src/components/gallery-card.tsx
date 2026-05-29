@@ -11,6 +11,7 @@ import {
   DotsSixVertical,
   Folder,
   Image as ImageIcon,
+  LinkSimple,
   Lock,
   Play,
   UploadSimple,
@@ -128,6 +129,8 @@ type OwnerProps = CommonProps & {
   /** Swap the cover for an uploaded file. Caller handles the upload +
    *  poster extraction + PUT. */
   onReplaceCover: (file: File) => void;
+  /** Set or clear the external link shown on hover as a "Visit" button. */
+  onLinkChange: (url: string) => void;
 };
 
 /**
@@ -150,6 +153,7 @@ export function SortableGalleryCard({
   onPromote,
   onDemote,
   onReplaceCover,
+  onLinkChange,
 }: OwnerProps) {
   const sortable = useSortable({
     id: project.id,
@@ -168,6 +172,26 @@ export function SortableGalleryCard({
   useEffect(() => {
     if (renaming) renameInputRef.current?.select();
   }, [renaming]);
+
+  // Inline link editing — small input next to the link chip.
+  const [editingLink, setEditingLink] = useState(false);
+  const [linkDraft, setLinkDraft] = useState(project.sourceUrl ?? "");
+  const linkInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (editingLink) linkInputRef.current?.select();
+  }, [editingLink]);
+  const startLinkEdit = () => {
+    setLinkDraft(project.sourceUrl ?? "");
+    setEditingLink(true);
+  };
+  const submitLink = () => {
+    setEditingLink(false);
+    onLinkChange(linkDraft.trim());
+  };
+  const cancelLink = () => {
+    setEditingLink(false);
+    setLinkDraft(project.sourceUrl ?? "");
+  };
 
   const promotedAlready = project.isOpenable || project.childCount > 0;
   const startRename = () => {
@@ -303,6 +327,49 @@ export function SortableGalleryCard({
         <DotsSixVertical size={11} weight="bold" aria-hidden />
         Drag
       </span>
+      {/* Link chip — set an external URL that shows as "Visit ↗" on hover.
+          Highlighted when a URL is already set. */}
+      {editingLink ? (
+        <input
+          ref={linkInputRef}
+          value={linkDraft}
+          onChange={(e) => setLinkDraft(e.target.value)}
+          placeholder="https://…"
+          autoFocus
+          onPointerDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submitLink();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              cancelLink();
+            }
+          }}
+          onBlur={submitLink}
+          className="absolute right-[5.25rem] top-3 z-30 h-6 w-[200px] rounded-[4px] border border-border bg-content/95 px-2 text-[11px] text-fg shadow-[0_4px_12px_-4px_rgb(0_0_0_/_0.4)] outline-none placeholder:text-tertiary backdrop-blur focus:border-fg"
+        />
+      ) : (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startLinkEdit();
+          }}
+          aria-label={project.sourceUrl ? `Link: ${project.sourceUrl}` : "Add link"}
+          title={project.sourceUrl ? `Link: ${project.sourceUrl}` : "Add link"}
+          className={
+            "absolute right-[5.25rem] top-3 inline-flex h-6 w-6 items-center justify-center rounded-[4px] border border-border-soft transition-[opacity,color] hover:text-fg group-hover:opacity-100 " +
+            (project.sourceUrl
+              ? "bg-fg/15 text-fg opacity-100"
+              : "bg-content/85 text-muted opacity-0")
+          }
+        >
+          <LinkSimple size={11} weight="bold" aria-hidden />
+        </button>
+      )}
       <button
         type="button"
         onPointerDown={(e) => e.stopPropagation()}

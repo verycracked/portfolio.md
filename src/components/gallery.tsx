@@ -305,6 +305,22 @@ export function Gallery({
     }
   };
 
+  const handleLinkChange = async (id: string, url: string) => {
+    setGroups((cur) =>
+      cur.map((g) => ({
+        ...g,
+        projects: g.projects.map((p) =>
+          p.id === id ? { ...p, sourceUrl: url || null } : p
+        ),
+      }))
+    );
+    await fetch(projectUrl(scope, id), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sourceUrl: url || null }),
+    });
+  };
+
   const handleReplaceCover = async (id: string, file: File) => {
     // Upload first (poster extracted client-side for videos), then PUT
     // both URLs onto the project. No optimistic update — we don't know
@@ -526,6 +542,7 @@ export function Gallery({
               onProjectPromote={(id, title) => void handlePromote(id, title)}
               onProjectDemote={(id) => void handleDemote(id)}
               onProjectReplaceCover={(id, file) => void handleReplaceCover(id, file)}
+              onProjectLinkChange={(id, url) => void handleLinkChange(id, url)}
             />
           ))}
         </div>
