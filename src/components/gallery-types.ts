@@ -26,6 +26,10 @@ export type GalleryProject = {
   colSpan: number;
   /** 1–2 — number of grid rows this card occupies vertically. */
   rowSpan: number;
+  /** Canonical project slug — set on ViewProject tiles that were seeded
+   *  from a real Project. Used by the "Open" button in view editors to
+   *  link to the canonical /projects/[slug] detail page. */
+  canonicalSlug?: string | null;
 };
 
 export type GalleryGroup = {

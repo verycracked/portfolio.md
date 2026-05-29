@@ -456,25 +456,30 @@ export function SortableGalleryCard({
       >
         <CornersOut size={13} weight="bold" aria-hidden />
       </button>
-      {/* Open project — shows for promoted tiles on the main page so
-          the owner can navigate into the detail page. Hidden in view
-          editors (disableLinks=true) because view-scoped slugs don't
-          resolve to canonical /projects/[slug] routes. */}
-      {promotedAlready && !disableLinks && (
-        <a
-          href={`/projects/${project.slug}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Open project"
-          title="Open project"
-          className="absolute right-3 bottom-12 inline-flex h-6 items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-2 text-[10px] text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
-        >
-          <ArrowUpRight size={10} weight="bold" aria-hidden />
-          Open
-        </a>
-      )}
+      {/* Open project — for promoted tiles. Uses the canonical slug on
+          the main page, or canonicalSlug (from sourceProject) in view
+          editors. Hidden when there's no resolvable canonical slug. */}
+      {(() => {
+        const openSlug = disableLinks
+          ? project.canonicalSlug
+          : project.slug;
+        if (!promotedAlready || !openSlug) return null;
+        return (
+          <a
+            href={`/projects/${openSlug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Open project"
+            title="Open project"
+            className="absolute right-3 bottom-12 inline-flex h-6 items-center gap-1 rounded-[4px] border border-border-soft bg-content/85 px-2 text-[10px] text-muted opacity-0 transition-[opacity,color] hover:text-fg group-hover:opacity-100"
+          >
+            <ArrowUpRight size={10} weight="bold" aria-hidden />
+            Open
+          </a>
+        );
+      })()}
       {/* Audio-enabled toggle — only relevant for video heroes. Pressed
           state (highlighted) means the "Play" CTA + theater modal are
           surfaced to visitors. */}

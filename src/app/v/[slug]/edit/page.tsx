@@ -48,6 +48,9 @@ export default async function ViewEditPage({
             projects: {
               where: { parentId: null },
               orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+              include: {
+                sourceProject: { select: { slug: true } },
+              },
             },
           },
         },
@@ -84,6 +87,7 @@ export default async function ViewEditPage({
       childCount: 0,
       colSpan: p.colSpan,
       rowSpan: p.rowSpan,
+      canonicalSlug: p.sourceProject?.slug ?? null,
     })),
   }));
 

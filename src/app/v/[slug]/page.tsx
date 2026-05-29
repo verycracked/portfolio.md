@@ -37,6 +37,9 @@ export default async function ViewPage({
             projects: {
               where: { parentId: null },
               orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+              include: {
+                sourceProject: { select: { slug: true } },
+              },
             },
           },
         },
@@ -74,6 +77,7 @@ export default async function ViewPage({
       childCount: 0,
       colSpan: p.colSpan,
       rowSpan: p.rowSpan,
+      canonicalSlug: p.sourceProject?.slug ?? null,
     })),
   }));
 
