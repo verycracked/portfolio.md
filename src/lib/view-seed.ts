@@ -76,3 +76,74 @@ export async function seedViewFromMain(viewId: string): Promise<void> {
     });
   }
 }
+
+/**
+ * Deep-clone an existing View into a new one. Copies aboutBody, all
+ * ViewGroups, and all ViewProjects (preserving sourceProjectId links).
+ * The new view gets its own accessToken automatically via schema default.
+ */
+export async function duplicateView(
+  sourceViewId: string,
+  targetViewId: string
+): Promise<void> {
+  const source = await prisma.view.findUnique({
+    where: { id: sourceViewId },
+    include: {
+      groups: {
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+        include: {
+          projects: {
+            where: { parentId: null },
+            orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+          },
+        },
+      },
+    },
+  });
+  if (!source) return;
+
+  await prisma.view.update({
+    where: { id: targetViewId },
+    data: {
+      aboutBody: source.aboutBody,
+      showAbout: source.showAbout,
+      showProjects: source.showProjects,
+    },
+  });
+
+  for (const group of source.groups) {
+    const viewGroup = await prisma.viewGroup.create({
+      data: {
+        viewId: targetViewId,
+        slug: group.slug,
+        name: group.name,
+        linkUrl: group.linkUrl ?? "",
+        order: group.order,
+      },
+    });
+
+    if (group.projects.length === 0) continue;
+
+    await prisma.viewProject.createMany({
+      data: group.projects.map((p) => ({
+        viewId: targetViewId,
+        viewGroupId: viewGroup.id,
+        sourceProjectId: p.sourceProjectId,
+        slug: p.slug,
+        title: p.title,
+        description: p.description,
+        sourceUrl: p.sourceUrl,
+        links: Array.isArray(p.links) ? p.links : [],
+        heroImageUrl: p.heroImageUrl,
+        posterUrl: p.posterUrl,
+        heroOffsetY: p.heroOffsetY,
+        hasAudio: p.hasAudio,
+        fullVideoUrl: p.fullVideoUrl,
+        isOpenable: p.isOpenable,
+        colSpan: p.colSpan,
+        rowSpan: p.rowSpan,
+        order: p.order,
+      })),
+    });
+  }
+}

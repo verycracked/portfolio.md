@@ -86,6 +86,38 @@ export function ViewsList({ initialViews }: Props) {
     await fetch(`/api/views/${id}`, { method: "DELETE" });
   };
 
+  const duplicateView = async (sourceId: string, sourceName: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/views", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: `${sourceName} (copy)`,
+          duplicateFrom: sourceId,
+        }),
+      });
+      if (!res.ok) return;
+      const created = (await res.json()) as ViewRow;
+      setViews((vs) => [
+        {
+          id: created.id,
+          slug: created.slug,
+          accessToken: created.accessToken ?? "",
+          name: created.name,
+          greeting: created.greeting ?? "",
+          groupCount: 0,
+          projectCount: 0,
+        },
+        ...vs,
+      ]);
+      setAutoEditId(created.id);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const renameView = (id: string, name: string, slug?: string) => {
     setViews((vs) =>
       vs.map((v) =>
@@ -106,6 +138,7 @@ export function ViewsList({ initialViews }: Props) {
         <ViewRowCard
           key={v.id}
           view={v}
+          onDuplicate={() => void duplicateView(v.id, v.name)}
           startEditing={autoEditId === v.id}
           onConsumeAutoEdit={() => setAutoEditId(null)}
           onRename={(name) => renameView(v.id, name)}
@@ -131,12 +164,14 @@ function ViewRowCard({
   startEditing,
   onConsumeAutoEdit,
   onRename,
+  onDuplicate,
   onDelete,
 }: {
   view: ViewRow;
   startEditing: boolean;
   onConsumeAutoEdit: () => void;
   onRename: (name: string, slug?: string) => void;
+  onDuplicate: () => void;
   onDelete: () => void;
 }) {
   const [copied, setCopied] = useState(false);
@@ -296,6 +331,15 @@ function ViewRowCard({
                 Copy link
               </>
             )}
+          </button>
+          <button
+            type="button"
+            onClick={onDuplicate}
+            title="Duplicate view"
+            className="inline-flex items-center gap-1 rounded-[4px] px-2 py-1 text-[11px] text-muted hover:bg-hover hover:text-fg"
+          >
+            <CopySimple size={11} weight="bold" aria-hidden />
+            Duplicate
           </button>
           <button
             type="button"
